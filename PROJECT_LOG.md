@@ -97,3 +97,83 @@ Retest WebSocket on iPhone after DEFAULT_TOKEN + wss:// fixes.
 - iPhone Safari test: **PASSED** — WebSocket connects successfully over Tailscale
 - Code 1006 resolved. Root cause was missing auth token in WebSocket URL.
 - Docs updated, committed as `b53dbef`.
+
+## 2026-06-26 — Session: Full Frontend Redesign — Discord-like UX
+
+### Goal
+Rewrite the mobile web frontend to look like Discord and fix the "can't type" UX issue. User feedback: "the mobile ux is really bad. u cant type yet." and "it was also supposed to look like discord".
+
+### What Happened
+1. Read and analyzed existing public/index.html, styles.css, app.js
+2. Read backend server/index.mjs to understand WebSocket message protocol
+3. Full HTML rewrite:
+   - Profile tabs (shell/qwen/hermes) as Discord-style channel tabs
+   - viewport-fit=cover for notch device safe areas
+   - enterkeyhint="send" for mobile keyboard send button
+   - Settings panel overlay with server address + token inputs
+   - Status dot indicator
+4. Full CSS rewrite:
+   - Discord dark theme palette (#313338 / #2b2d31 / #5865f2)
+   - 100dvh height for iOS keyboard behavior (prevents viewport collapse)
+   - Profile tabs as horizontal channel-like buttons
+   - Message-style output area with scroll
+   - Bottom-fixed input bar with send button
+   - Floating settings FAB button
+   - Settings panel slide-in overlay
+   - Toast notifications
+5. Full JS rewrite (IIFE, strict mode):
+   - `getDefaultServer()` — smart default server detection:
+     - localhost/127.0.0.1 → ws://127.0.0.1:8797
+     - Tailscale IPs → wss://100.78.120.128:8797
+   - DEFAULT_TOKEN fallback so users don't manually enter auth
+   - WebSocket protocol selection (wss:// for Tailscale, ws:// for localhost)
+   - ANSI escape stripping: CSI sequences + OSC sequences (BEL/ST terminators)
+   - Profile tab switching with automatic reconnect
+   - Queued writes on disconnect (replay on reconnect)
+   - localStorage persistence for server/token/profile
+   - Settings panel with connect/reconnect button
+   - 3-second reconnect backoff on failure
+6. Key fix: replaced hardcoded DEFAULT_SERVER with dynamic getDefaultServer() function
+   - Desktop dev now works on localhost without code changes
+   - Mobile on Tailscale uses wss:// automatically
+7. Desktop browser test: ALL PASSED
+   - WebSocket connects to 127.0.0.1:8797
+   - Commands send and output returns (tested: echo hello from spartan)
+   - ANSI codes stripped cleanly (Spartan logo renders)
+   - Profile switching works (shell → qwen → hermes)
+   - Settings panel opens/closes
+   - localStorage persists correctly
+   - Zero JS errors in console
+8. HTML validate: passed (2 info-level hints only)
+9. JS syntax check: passed
+
+### Files Changed
+- `public/index.html`: Full rewrite (~84 lines changed)
+- `public/styles.css`: Full rewrite (~367 lines changed)
+- `public/app.js`: Full rewrite (~160 lines changed)
+- `HANDOFF.md`: Updated with new architecture and verified status
+- `CURRENT_STATE.md`: Updated with redesign status
+- `PROJECT_LOG.md`: Added this session entry
+- `README.md`: Updated status
+
+### Tests Run
+- `node -c public/app.js` → syntax OK
+- `html-validate public/index.html` → passed
+- Browser test on http://127.0.0.1:9002:
+  - WebSocket connected (status dot green)
+  - Command sent: "echo hello from spartan" → command echoed + output received
+  - Profile switch: shell → qwen → connected to qwen profile
+  - Settings panel: opened, fields populated, close works
+  - Console: zero errors
+  - Output: ANSI codes stripped cleanly
+
+### Remaining Work
+1. ~~Desktop browser test~~ — DONE
+2. ~~ANSI stripping~~ — DONE (CSI + OSC)
+3. ~~Profile switching~~ — DONE
+4. ~~Settings panel~~ — DONE
+5. ~~Smart server detection~~ — DONE
+6. **Test new frontend on iPhone over Tailscale** — PENDING (new CSS/HTML not yet synced to spartan-cli/public/)
+7. **Mobile viewport test** — PENDING (keyboard input, scroll behavior on device)
+8. Android build — BLOCKED (Java version)
+9. iOS native build — BLOCKED (no macOS)

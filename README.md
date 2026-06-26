@@ -54,7 +54,7 @@ rsync -av public/ ../spartan-cli/public/
 ```
 
 ## Current Status
-**Frontend complete.** WebSocket connection works from desktop browser and curl. DEFAULT_TOKEN + wss:// fixes committed in `67dff49`. Mobile over Tailscale pending iPhone retest.
+**Frontend redesigned and desktop-tested (2026-06-26).** Full HTML/CSS/JS rewrite with Discord-like dark theme, profile tabs, ANSI stripping, smart server detection. Desktop browser test: all features working. Mobile/iPhone test pending — new frontend not yet synced to spartan-cli/public/ or tested over Tailscale.
 
 - See `CURRENT_STATE.md` for exact status
 - See `HANDOFF.md` for blockers and next steps

@@ -1,38 +1,33 @@
 # Spartan Native — Current State (2026-06-26)
 
+## Head
+Pending commit: full frontend redesign (HTML/CSS/JS rewrite + doc updates)
+
 ## What Works
 - Capacitor scaffold: `android/` and `ios/` platform folders generated
-- Git repo: HEAD at `b53dbef`
-- `public/index.html`: App shell with header, output, input, settings panel, profile-select dropdown
-- `public/styles.css`: Complete — 398 lines, all UI sections styled
-- `public/app.js`: 221 lines, WebSocket logic with DEFAULT_TOKEN + wss:// fixes (committed)
-- `public/icon.png`: 37KB app icon present
 - `capacitor.config.json`: Properly configured for Capacitor v7
-- Web UI: loads in browser with zero JS errors, settings opens/closes, profile-select works, toast works
+- `public/icon.png`: 37KB app icon present
+- **Frontend fully redesigned** (not yet committed):
+  - `public/index.html`: Discord-like mobile layout with profile tabs, viewport-fit=cover, enterkeyhint="send"
+  - `public/styles.css`: Discord dark theme, 100dvh for iOS keyboard, message-style output, mobile-friendly input bar, settings panel, toasts
+  - `public/app.js`: Full rewrite — smart server detection, DEFAULT_TOKEN, wss:// for Tailscale, ANSI stripping (CSI+OSC), queued writes, localStorage persistence, settings panel
+- Desktop browser test: **PASSED**
+  - WebSocket connects to 127.0.0.1:8797
+  - Commands send and output returns
+  - Profile switching works (shell/qwen/hermes)
+  - ANSI codes stripped cleanly
+  - Settings panel works
+  - Zero JS errors
 - Backend WebSocket: works on localhost (verified with curl — 101 Switching Protocols)
 - HTTPS proxy: works (verified with curl over Tailscale IP — 101 Switching Protocols)
-- Backend /api/health: returns session data, auth enabled, token matches
-- Frontend served on port 9002: contains all fixes, accessible on both localhost and Tailscale IP
+- Backend /api/health: returns session data, auth enabled
 - `spartan-cli/public/` synced with `spartan-native/public/`
 
-## What Does Not Work
-- **WebSocket on iPhone over Tailscale** — RESOLVED, tested and confirmed working (2026-06-26)
+## What Does Not Work / Is Unverified
+- **New frontend NOT tested on iPhone** — HTML/CSS/JS rewritten but not yet synced to spartan-cli/public/ or tested over Tailscale
+- **Mobile viewport behavior unverified** — keyboard input, scroll-to-bottom, 100dvh not tested on device
 - **Android build**: Blocked by Java version mismatch (Fedora has Java 25/26, Gradle needs 17 or 21)
 - **iOS build**: Impossible without macOS
-
-## Exact Run/Build Status
-```
-$ cd ~/Documents/spartan-native
-$ git status → clean working tree
-$ git log --oneline -1 → b53dbef Update docs: iPhone test passed, WebSocket Code 1006 resolved
-$ curl -s http://127.0.0.1:9002/app.js | grep -c "DEFAULT_TOKEN" → 2
-$ curl -s http://127.0.0.1:9002/app.js | grep -c "wss://" → 1
-$ diff spartan-native/public/ spartan-cli/public/ → identical
-$ systemctl --user status spartan-cli.service → active (PID 300076)
-$ systemctl --user status spartan-cli-https.service → active (PID 2809)
-$ lsof -i :9002 → Python HTTP server PID 441648 (restarted 2026-06-26)
-$ curl http://100.78.120.128:9002 → iPhone Safari test: WebSocket connects successfully
-```
 
 ## Services Running
 - `spartan-cli.service` → backend on `127.0.0.1:8797`
@@ -44,3 +39,4 @@ $ curl http://100.78.120.128:9002 → iPhone Safari test: WebSocket connects suc
 - `spartan-cli/public/` is a copy — any future changes must be synced manually
 - Java 21 install requires `sudo`
 - Self-signed TLS cert may need manual trust on iPhone
+- Token embedded in app.js DEFAULT_TOKEN constant (acceptable for private/internal use)

@@ -1,14 +1,19 @@
 # Spartan Native — Handoff
-# Spartan Native — Handoff
+
 ## Current Goal
-WebSocket connection works on iPhone over Tailscale (RESOLVED 2026-06-26). Next: Android build (blocked by Java version).
+Desktop web test PASSED with full Discord-like frontend redesign. Next: mobile/iPhone viewport test over Tailscale.
 
 ## Architecture
 ```
-iPhone (Safari) → http://100.78.120.128:9002  (Python HTTP server, static files from spartan-native/public/)
-                → wss://100.78.120.128:8797    (HTTPS proxy via spartan-cli-https.service)
+Desktop (browser) → http://127.0.0.1:9002  (Python HTTP server, static files from spartan-native/public/)
+                  → ws://127.0.0.1:8797     (direct backend, no proxy needed on localhost)
+                  ↘
+            http://127.0.0.1:8797  (spartan-cli backend, Node.js + ws library)
+
+iPhone (Safari)  → http://100.78.120.128:9002  (Python HTTP server on Tailscale)
+                  → wss://100.78.120.128:8797    (HTTPS proxy via spartan-cli-https.service)
                                   ↘
-                        http://127.0.0.1:8797  (spartan-cli backend, Node.js + ws library)
+                        http://127.0.0.1:8797  (spartan-cli backend)
 ```
 
 - **Frontend source**: `spartan-native/public/` (canonical, versioned in git)
@@ -20,21 +25,42 @@ iPhone (Safari) → http://100.78.120.128:9002  (Python HTTP server, static file
 - **WebSocket endpoint**: `/terminal?session=native&profile=<profile>&token=<token>`
 
 ## Services
-| Service | Bind | PID | Status |
-|---------|------|-----|--------|
-| `spartan-cli.service` | `127.0.0.1:8797` | 300076 | active |
-| `spartan-cli-https.service` | `100.78.120.128:8797` | 2809 | active |
-| Python dev server | `0.0.0.0:9002` | 313693 | active (serves spartan-native/public/) |
+| Service | Bind | Status |
+|---------|------|--------|
+| `spartan-cli.service` | `127.0.0.1:8797` | active |
+| `spartan-cli-https.service` | `100.78.120.128:8797` | active |
+| Python dev server | `0.0.0.0:9002` | active (serves spartan-native/public/) |
 
-## Files Changed (Committed in This Session)
-1. **`public/app.js`** (committed):
-   - Added `DEFAULT_TOKEN` constant with actual auth token value
-   - Token fallback: `authTokenEl.value.trim() || DEFAULT_TOKEN`
-   - Protocol logic: forces `wss://` when address contains Tailscale IP `100.78.120.128`
-   - Added `console.log("WS URL:", url)` for Safari debugging
+## Frontend Files (public/)
 
-2. **`spartan-cli/public/`** (synced, NOT versioned):
-   - All files from `spartan-native/public/` copied via `rsync`
+### public/index.html
+- Discord-like mobile layout with profile tabs (shell/qwen/hermes)
+- viewport-fit=cover for notch device safe areas
+- enterkeyhint="send" for mobile keyboards
+- Settings panel overlay with server address + token inputs
+- Status dot (connected/disconnected)
+
+### public/styles.css
+- Discord dark theme palette (#313338 / #2b2d31 / #5865f2)
+- 100dvh height for iOS keyboard behavior (no viewport collapse)
+- Profile tabs as horizontal channel-like buttons
+- Message-style output area with scroll
+- Bottom-fixed input bar with send button
+- Floating settings button (FAB-style)
+- Settings panel slide-in overlay
+- Toast notifications
+
+### public/app.js
+- IIFE with strict mode, no global leaks
+- `getDefaultServer()` — smart default: localhost → 127.0.0.1:8797, everything else → Tailscale IP
+- `DEFAULT_TOKEN` fallback so users don't need to manually enter auth
+- WebSocket protocol: wss:// for Tailscale IPs, ws:// for localhost
+- ANSI escape stripping: CSI sequences + OSC sequences (BEL/ST terminators)
+- Profile tab switching with reconnect
+- Queued writes on disconnect (replay on reconnect)
+- localStorage persistence for server/token/profile
+- Settings panel with connect/reconnect button
+- 3-second reconnect backoff
 
 ## Backend Changes (Previous Sessions, Already Committed)
 - `spartan-cli/server/index.mjs`: `sameOriginUpgrade` patched to allow:
@@ -42,53 +68,39 @@ iPhone (Safari) → http://100.78.120.128:9002  (Python HTTP server, static file
   - HTTPS proxy forwarded connections (checks `x-forwarded-proto: https`)
 - `spartan-cli/server/index.mjs`: `authorizedUpgrade` skips auth for local requests, validates token from URL param for remote requests
 
-## Commands Run
-- `rsync -av spartan-native/public/ spartan-cli/public/` → synced 5 files
-- `systemctl --user status spartan-cli.service spartan-cli-https.service` → both active
-- `lsof -i :9002` → Python server PID 313693 on 0.0.0.0:9002
-- `curl -s http://127.0.0.1:9002/app.js | grep -n "DEFAULT_TOKEN\|wss\|WS URL"` → fixes confirmed
-- `curl -s http://100.78.120.128:9002/app.js | grep -n "DEFAULT_TOKEN\|wss\|WS URL"` → identical on Tailscale IP
-- `curl http://127.0.0.1:8797/api/health?token=...` → backend responds with session data, auth enabled
+## What Works (Verified)
+1. **Desktop browser test** — http://127.0.0.1:9002
+   - WebSocket connects to 127.0.0.1:8797 via ws://
+   - Commands send and output returns (tested: echo hello from spartan)
+   - ANSI codes stripped cleanly (Spartan logo renders)
+   - Profile switching works (shell → qwen → hermes)
+   - Settings panel opens/closes
+   - localStorage persists server/token/profile
+   - Zero JS errors in console
+2. **Backend health** — curl to /api/health returns sessions, auth enabled
+3. **iPhone Tailscale test** — PASSED (2026-06-26, previous session)
+   - WebSocket connects over wss://100.78.120.128:8797
+   - Code 1006 resolved by DEFAULT_TOKEN + wss:// fixes
 
-## Failures / Blockers
-1. **WebSocket Code 1006 on iPhone over Tailscale** (PRIMARY BLOCKER)
-   - Backend works (verified with curl on the machine)
-   - Proxy works (verified with curl)
-   - app.js fixes applied (DEFAULT_TOKEN + wss://) and committed
-   - **TESTED on iPhone after commit f6d50b5 — connection successful, Code 1006 resolved**
-   - Possible remaining causes if still failing:
-     - Safari mixed-content blocking (page on HTTP, WS on WSS)
-     - Self-signed TLS cert not trusted on iPhone (need to install spartan-ca.cer)
-     - Safari Web Inspector needed to see actual console.log output
+## What Is NOT Yet Verified
+1. **Mobile viewport behavior** — keyboard input, scroll-to-bottom, 100dvh on actual iPhone Safari (new CSS/HTML not yet tested on device)
+2. **New frontend on Tailscale** — the redesigned HTML/CSS/JS has not been synced to spartan-cli/public/ or tested on iPhone yet
+3. **Android build** — still blocked by Java version
 
-2. **Android build blocked**: Java 25/26 on Fedora, Gradle needs Java 17 or 21. Requires `sudo dnf install java-21-openjdk`
-3. **iOS build impossible**: No macOS
-3. **iOS build impossible**: No macOS
-## Current Status
-- **Commit `f6d50b5`**: DEFAULT_TOKEN + wss:// fixes committed (HEAD)
-- **Unversioned spartan-cli/public/**: synced with spartan-native/public/
-- **Services running**: backend, HTTPS proxy, Python dev server all active
-- **Backend verified**: /api/health returns sessions, auth enabled, token matches
-- **Frontend verified**: served app.js contains all fixes on both localhost and Tailscale IP
-- **iPhone test**: PASSED — WebSocket connects successfully over Tailscale WSS
+## Blockers
+1. **Android build**: Java 25/26 on Fedora, Gradle needs Java 17 or 21. Requires `sudo dnf install java-21-openjdk`
+2. **iOS native build**: No macOS available. Options: GitHub Actions CI or physical Mac.
 
 ## Ordered Next Steps
-### Step 1: Test on iPhone
-1. Navigate Safari on iPhone to `http://100.78.120.128:9002`
-2. Tap Connect button
-3. Connection successful — no further action needed for iPhone
-4. Verify the WS URL uses `wss://` and includes the token parameter
+### Step 1: Test new frontend on iPhone over Tailscale
+1. Sync: `rsync -av public/ ../spartan-cli/public/`
+2. Navigate iPhone Safari to `http://100.78.120.128:9002`
+3. Verify layout renders correctly (Discord-like dark theme, profile tabs)
+4. Verify typing works (input bar, keyboard, send)
+5. Verify profile switching works
+6. Verify scroll behavior with keyboard open
 
-### Step 2: If still failing — install self-signed CA cert
-- Download `http://100.78.120.128:9002/spartan-ca.cer` (or from backend)
-- Install on iPhone via Settings > General > Profile
-- Trust the cert in Settings > General > About > Certificate Trust Settings
-
-### Step 3: Android build (after Java 21 installed)
-```bash
-sudo dnf install java-21-openjdk
-export JAVA_HOME=/usr/lib/jvm/java-21-openjdk
-cd ~/Documents/spartan-native
-npx cap sync android
-cd android && ./gradlew assembleDebug
-```
+### Step 2: If mobile test passes — commit + proceed to iOS build
+- Install Java 21 for Android (optional)
+- Set up GitHub Actions workflow for iOS builds
+- Or find macOS build target
