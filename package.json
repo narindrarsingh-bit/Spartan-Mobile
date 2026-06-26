@@ -1,0 +1,17 @@
+{
+  "name": "spartan-native",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "build-web": "cp -r ../spartan-cli/dist/* ./public/",
+    "build-android": "npm run build-web && npx cap sync android",
+    "build-ios": "npm run build-web && npx cap sync ios",
+    "android": "npx cap open android",
+    "ios": "npx cap open ios"
+  },
+  "dependencies": {
+    "@capacitor/android": "^7.6.7",
+    "@capacitor/core": "^7.6.7",
+    "@capacitor/ios": "^7.6.7"
+  }
+}

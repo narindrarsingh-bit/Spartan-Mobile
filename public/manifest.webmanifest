@@ -1,0 +1,16 @@
+{
+  "name": "Spartan CLI",
+  "short_name": "Spartan",
+  "description": "Private mobile command terminal for Roy's machine.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#050911",
+  "theme_color": "#050911",
+  "icons": [
+    {
+      "src": "/icon.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "appId": "com.roy.spartancli",
+  "appName": "Spartan CLI",
+  "webDir": "public",
+  "server": {
+    "androidScheme": "https",
+    "iosScheme": "https"
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 500,
+      "launchAutoHide": true
+    }
+  }
+}
