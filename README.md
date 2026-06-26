@@ -5,38 +5,45 @@ A Capacitor-based native wrapper for the Spartan CLI web terminal. Wraps the exi
 
 ## Architecture
 - Source web build: `~/Documents/spartan-cli/dist/`
-- Capacitor web dir: `public/` (copied from spartan-cli/dist)
+- Capacitor web dir: `public/`
 - Native platforms: `android/`, `ios/`
 - Config: `capacitor.config.json`
+- WebSocket: `ws://<server>/terminal?session=native&profile=<profile>&token=...`
 
 ## How to Build
 
 ### Android
 ```bash
-npm run build-android   # copies web build, syncs to android/, ready for Android Studio
+npx cap sync android
+# Then open android/ in Android Studio, build APK
 ```
-Then open Android Studio, load `android/`, and build an APK/AAB.
+**Note**: Requires Java 21. Fedora currently has Java 25/26. Install Java 21 with sudo.
 
 ### iOS
 ```bash
-npm run build-ios       # copies web build, syncs to ios/, ready for Xcode
+npx cap sync ios
+# Then open ios/App/App.xcodeproj in Xcode, build/archive
 ```
-Then open Xcode, load `ios/App/App.xcodeproj`, and build. For sideloading: archive and distribute via Xcode or Sideloadly.
+**Note**: Requires macOS. Consider GitHub Actions CI as alternative.
 
 ### Development
 ```bash
-npx cap run android     # live-reload to connected Android device
-npx cap run ios         # live-reload to connected iOS device
+# Preview web UI
+cd public && python3 -m http.server 9000
+
+# Sync web to native platforms
+npx cap sync
 ```
 
-## Important Notes
-- The WebView loads the web build from the local `public/` directory.
-- The Spartan CLI app communicates with the backend over WebSocket to a Tailscale IP.
-- The `public/` directory must be kept in sync with `spartan-cli/dist/`.
-- No code changes needed in the web app — this is a pure native shell wrapper.
+## Current Status
+**Work in progress.** Frontend has known bugs:
+- `styles.css` is incomplete (missing input/settings/toast styles)
+- `app.js` references `#profile-select` not in HTML (null reference error)
+- See `CURRENT_STATE.md` for exact status
+- See `HANDOFF.md` for next steps
 
-## Handoff
-- Git repo is the durable truth surface.
-- CURRENT_STATE.md tracks live state.
-- PROJECT_LOG.md tracks dated work.
-- See `../spartan-cli/README.md` for the web app documentation.
+## Important Notes
+- Spartan CLI source (`../spartan-cli/`) is read-only — never modify it
+- Token stored in `/home/roy/.config/spartan-cli/env`
+- Git repo is the durable truth surface
+- See `HANDOFF.md` for current blockers and next steps

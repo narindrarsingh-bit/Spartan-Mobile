@@ -1,60 +1,26 @@
 # Spartan CLI — Project Log
 
-## 2026-06-26 — Project Initialization
+## 2026-06-26 — Session: Fix CSS Overwrite + Prepare Handoff
 
 ### Goal
-Build a Capacitor native wrapper for the Spartan CLI web terminal, keeping everything in `~/Documents` for hygiene.
+Fix CSS `:root` variable loss from file overwrite bug, assess full frontend state, prepare handoff for fresh session.
 
-### Rules Applied
-- Repo-local files: README.md, CURRENT_STATE.md, PROJECT_LOG.md
-- Git as durable truth surface
-- All work in `~/Documents/spartan-native`
-- Spartan CLI source is read-only (copy dist/, never modify)
+### What Happened
+1. **Discovered CSS overwrite bug**: `write_file` was called multiple times, each call overwrote the entire `styles.css`. The first append (containing `:root` variables) was replaced by the second append (output area styles only). CSS variables were completely lost.
+2. **Rebuilt CSS from scratch**: Rewrote the complete `styles.css` with `:root` variables + global reset + body + header + output area (161 lines).
+3. **Identified remaining issues**:
+   - CSS still missing input area, settings panel, toast styles (~40% of styles)
+   - `app.js` references `#profile-select` element not in HTML → null reference → JS init fails
+   - iPhone Safari showed grey screen — caused by all the above
+4. **Assessed full project state**: Read all source files, checked git log, checked build status, checked Capacitor config.
+5. **Wrote handoff docs**: HANDOFF.md, CURRENT_STATE.md, PROJECT_LOG.md, README.md.
 
-### Commands Run
-```bash
-mkdir -p ~/Documents/spartan-native
-git init
-npx @capacitor/cli init "Spartan CLI" com.roy.spartancli web --web-dir=public
-npm install @capacitor/android @capacitor/core @capacitor/ios
-npx @capacitor/cli add android
-npx @capacitor/cli add ios
-npx @capacitor/cli sync
-```
+### Key Findings
+- **CSS write strategy is broken**: Must write complete file each time, never chunk-and-replace.
+- **Profile selector is phantom**: app.js expects it, index.html doesn't have it. Need to either add select to HTML or remove from JS.
+- **Java mismatch is a sudo requirement**: Can't fix Android build without elevated privileges.
 
-### Decisions
-- Capacitor v8 for native platforms
-- Android + iOS platforms added
-- Web build copied from existing spartan-cli/dist/ (read-only)
-
-## 2026-06-26 — UI Redesign
-
-### Goal
-Replace raw terminal look with a polished, Discord-inspired UI that looks like a legitimate productivity app.
-
-### Design Direction
-- **Palette**: Navy blue (#2b2d31) + gold (#d4a843) accents
-- **Layout**: Discord-style — header bar + scrollable output + bottom command input bar
-- **Input bar**: Rounded, gold glow on focus, submit button — looks like a chat app, not a terminal
-- **Settings panel**: Slide-up bottom sheet for server address, auth token, font size
-- **Toast notifications**: Connection status feedback
-- **Persistence**: Settings saved to LocalStorage
-
-### Files Created
-- `public/index.html` — App shell (header, output area, input bar, settings panel)
-- `public/styles.css` — Full CSS with CSS variables, dark theme, responsive layout
-- `public/app.js` — WebSocket connection, auto-reconnect, command sending, settings management
-
-### Architecture
-- WebSocket connects to `ws://<server>:8797/ws`
-- Messages: `{ type: "command", content: "..." }` → server
-- Server responds: `{ type: "output"|"error"|"auth-ok"|"auth-fail", content: "..." }`
-- Auto-reconnect every 3s on disconnect
-- All settings persisted in localStorage
-
-### Next Steps
-1. Test on iPhone via Safari (load `public/index.html` from Fedora server)
-2. Build Android APK for sideload test
-3. Push to GitHub + set up macOS CI workflow for IPA builds
-4. Customize icon and splash screen
-5. Update Brain note after successful device test
+### Decisions Made
+- No changes committed yet. Handoff first, then fixes in next session.
+- CSS will be written as a single complete file next time.
+- Profile selector decision: to be made in next session (add to HTML or remove from JS).
