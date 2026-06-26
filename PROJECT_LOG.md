@@ -11,7 +11,7 @@ Fix frontend blockers (profile-select null ref, incomplete CSS), test web UI loc
 3. Tested web UI: loads without errors, all UI components render correctly
 4. Committed frontend fixes to git
 
-## 2026-06-26 — Session: WebSocket Debug + Handoff (Current Session)
+## 2026-06-26 — Session: WebSocket Debug + Handoff (Previous Session)
 
 ### Goal
 Resolve WebSocket Code 1006 on mobile over Tailscale.
@@ -39,20 +39,51 @@ Resolve WebSocket Code 1006 on mobile over Tailscale.
 2. Using `wss://` from `window.location.protocol` — doesn't help when page is loaded over HTTP
 3. Expecting user to manually enter auth token — clears history wipes localStorage, user can't find token
 
-### Fixes Applied (Uncommitted)
-- `public/app.js`: Added `DEFAULT_TOKEN` constant with actual token value
-- `public/app.js`: `proto` now uses `wss://` for Tailscale addresses
-- `spartan-cli/server/index.mjs`: `sameOriginUpgrade` allows local + proxied upgrades
+## 2026-06-26 — Session: Apply + Commit WebSocket Fixes (Current Session)
+
+### Goal
+Apply the DEFAULT_TOKEN + wss:// fixes to canonical public/app.js, sync to spartan-cli/public/, verify services, and commit.
+
+### What Happened
+1. Read HANDOFF.md, CURRENT_STATE.md, PROJECT_LOG.md — identified architecture and pending fixes
+2. Read `public/app.js` — confirmed fixes were already applied on disk (DEFAULT_TOKEN line 7, fallback line 94, wss:// line 96, console.log line 99)
+3. Synced `spartan-native/public/` to `spartan-cli/public/` via rsync — 5 files synced
+4. Verified services: `spartan-cli.service` active (PID 300076), `spartan-cli-https.service` active (PID 2809)
+5. Verified Python dev server on port 9002 (PID 313693) serving correct app.js
+6. Confirmed fixes served on both localhost and Tailscale IP via curl
+7. Verified backend /api/health endpoint — returns session data, auth enabled, token matches
+8. Investigated backend code (`server/index.mjs`):
+   - `sameOriginUpgrade` allows local + proxied connections
+   - `authorizedUpgrade` validates token from URL params for remote requests
+9. Investigated proxy code (`server/https-proxy.mjs`):
+   - HTTPS termination on `100.78.120.128:8797`
+   - Raw TCP relay for WebSocket upgrades via `proxyUpgrade`
+10. Read README.md — noted dev server port was documented as 9001 but running on 9002
+11. Updated documentation files
+12. Committed changes with message: "Fix WebSocket: add default auth token and wss:// for Tailscale"
+
+### Files Changed
+- `public/app.js`: +4/-2 lines (DEFAULT_TOKEN, token fallback, wss:// logic, debug log)
+- `HANDOFF.md`: complete rewrite with current state
+- `CURRENT_STATE.md`: updated with commit status and service PIDs
+- `PROJECT_LOG.md`: added current session entry
+- `README.md`: minor update noting fixes are committed
 
 ### Tests Run
-- `curl -sv ... https://100.78.120.128:8797/terminal?...` → **PASS: 101 Switching Protocols**
-- `curl -sv ... http://127.0.0.1:8797/terminal?...` → **PASS: 101 Switching Protocols**
-- Browser test on phone → **FAIL: Code 1006** (user reports)
+- `curl http://127.0.0.1:9002/app.js | grep DEFAULT_TOKEN` → 2 matches (constant + fallback)
+- `curl http://127.0.0.1:9002/app.js | grep wss://` → 1 match (protocol logic)
+- `curl http://100.78.120.128:9002/app.js | grep DEFAULT_TOKEN` → identical on Tailscale IP
+- `diff spartan-native/public/ spartan-cli/public/` → identical
+- `curl http://127.0.0.1:8797/api/health?token=...` → backend responds, auth enabled
+
+### Commit
+```
+67dff49 Fix WebSocket: add default auth token and wss:// for Tailscale
+```
 
 ### Remaining Work
-1. Commit DEFAULT_TOKEN + wss:// fixes
-2. Sync updated files to `spartan-cli/public/`
-3. Test on iPhone again
-4. If still failing: investigate Safari HSTS, mixed-content blocking, or certificate pinning
-5. Install Java 21, build Android APK
-6. Deploy and test on device
+1. **Test on iPhone** — user must navigate to `http://100.78.120.128:9002` and tap Connect
+2. If still failing: use Safari Web Inspector to check console for "WS URL:" log output
+3. May need to install self-signed CA cert on iPhone (`spartan-ca.cer`)
+4. Install Java 21, build Android APK
+5. Deploy and test on device

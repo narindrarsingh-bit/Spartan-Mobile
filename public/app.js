@@ -4,6 +4,7 @@
 
   const DEFAULT_SERVER = "100.78.120.128:8797";
   const DEFAULT_PROFILE = "shell";
+  const DEFAULT_TOKEN = "90883f825783b67a9adf94d22547603f876f4b28469fd803";
   let ws = null;
   let reconnectTimer = null;
   let pendingWrites = [];
@@ -90,11 +91,12 @@
   /* --- WebSocket Connection --- */
   function connect() {
     var addr = serverAddressEl.value.trim() || DEFAULT_SERVER;
-    var token = authTokenEl.value.trim();
+    var token = authTokenEl.value.trim() || DEFAULT_TOKEN;
     var profile = profileSelect.value || DEFAULT_PROFILE;
-    var proto = window.location.protocol === "https:" ? "wss://" : "ws://";
+    var proto = addr.includes("100.78.120.128") ? "wss://" : (window.location.protocol === "https:" ? "wss://" : "ws://");
     var url = proto + addr + "/terminal?session=native&profile=" + encodeURIComponent(profile);
     if (token) url += "&token=" + encodeURIComponent(token);
+    console.log("WS URL:", url);
 
     setStatus("connecting");
     showToast("Connecting to " + profile + "...");

@@ -1,73 +1,94 @@
 # Spartan Native — Handoff
 
 ## Current Goal
-Resolve WebSocket Code 1006 failure on mobile device over Tailscale. The frontend loads in Safari on iPhone but cannot establish a WebSocket connection to `100.78.120.128:8797`. The backend (on the same Fedora machine) works perfectly — verified with curl.
+Resolve WebSocket Code 1006 failure on Safari (iPhone) over Tailscale. The frontend loads but cannot establish a WebSocket connection to `100.78.120.128:8797`.
 
 ## Architecture
 ```
-iPhone (Safari) → https://100.78.120.128:9002  (Python HTTP server, static files from spartan-native/public/)
-                → wss://100.78.120.128:8797     (HTTPS proxy via spartan-cli-https.service)
+iPhone (Safari) → http://100.78.120.128:9002  (Python HTTP server, static files from spartan-native/public/)
+                → wss://100.78.120.128:8797    (HTTPS proxy via spartan-cli-https.service)
                                   ↘
-                        https://100.78.120.128:8797 → 127.0.0.1:8797 (spartan-cli backend)
+                        http://127.0.0.1:8797  (spartan-cli backend, Node.js + ws library)
 ```
 
-- Web UI: `public/index.html`, `public/app.js`, `public/styles.css` (committed to git)
-- Backend WebSocket endpoint: `/terminal?session=native&profile=<profile>&token=<token>`
-- Backend served static files from `spartan-cli/public/` (copied from spartan-native/public/)
-- HTTPS proxy: `spartan-cli/server/https-proxy.mjs` on `100.78.120.128:8797`, forwards to `127.0.0.1:8797`
-- Python dev server: `public/` served on `9001` (for local testing)
-- Token stored in `/home/roy/.config/spartan-cli/env` as `SPARTAN_TOKEN=90883f82...d803`
+- **Frontend source**: `spartan-native/public/` (canonical, versioned in git)
+- **Mirror**: `spartan-cli/public/` (copied from spartan-native, NOT versioned)
+- **Backend**: `spartan-cli/server/index.mjs` — Express + WebSocket via `ws` library
+- **HTTPS Proxy**: `spartan-cli/server/https-proxy.mjs` — TLS termination, raw TCP relay for WS upgrades
+- **Dev server**: Python HTTP server on port 9002 serving `spartan-native/public/`
+- **Token**: `/home/roy/.config/spartan-cli/env` → `SPARTAN_TOKEN=90883f825783b67a9adf94d22547603f876f4b28469fd803`
+- **WebSocket endpoint**: `/terminal?session=native&profile=<profile>&token=<token>`
 
-## Files Changed (This Session — Not Yet Committed)
-The committed version (HEAD `73664ef`) does NOT include the latest fixes for WebSocket auth.
-These were tested live on disk but not committed:
+## Services
+| Service | Bind | PID | Status |
+|---------|------|-----|--------|
+| `spartan-cli.service` | `127.0.0.1:8797` | 300076 | active |
+| `spartan-cli-https.service` | `100.78.120.128:8797` | 2809 | active |
+| Python dev server | `0.0.0.0:9002` | 313693 | active (serves spartan-native/public/) |
 
-1. **`public/app.js`**: Need to add `DEFAULT_TOKEN` constant and use it as fallback when auth field is empty
-2. **`public/app.js`**: Need to use `wss://` when connecting to the Tailscale address (not `ws://` from HTTP page)
-3. **`spartan-cli/server/index.mjs`**: `sameOriginUpgrade` patched to allow local and proxied WS upgrades (in spartan-cli repo)
-4. **`spartan-cli/public/app.js`**: Updated with same app.js fixes (this is what the backend serves)
+## Files Changed (Committed in This Session)
+1. **`public/app.js`** (committed):
+   - Added `DEFAULT_TOKEN` constant with actual auth token value
+   - Token fallback: `authTokenEl.value.trim() || DEFAULT_TOKEN`
+   - Protocol logic: forces `wss://` when address contains Tailscale IP `100.78.120.128`
+   - Added `console.log("WS URL:", url)` for Safari debugging
+
+2. **`spartan-cli/public/`** (synced, NOT versioned):
+   - All files from `spartan-native/public/` copied via `rsync`
+
+## Backend Changes (Previous Sessions, Already Committed)
+- `spartan-cli/server/index.mjs`: `sameOriginUpgrade` patched to allow:
+  - Local socket connections (127.0.0.1 / ::1)
+  - HTTPS proxy forwarded connections (checks `x-forwarded-proto: https`)
+- `spartan-cli/server/index.mjs`: `authorizedUpgrade` skips auth for local requests, validates token from URL param for remote requests
 
 ## Commands Run
-- `curl -sv ... https://100.78.120.128:8797/terminal?session=native&profile=shell&token=...` → **101 Switching Protocols, WebSocket works**
-- `curl -sv ... http://127.0.0.1:8797/terminal?...` → **101 Switching Protocols, WebSocket works**
-- System services: `spartan-cli.service` (backend), `spartan-cli-https.service` (HTTPS proxy)
-- `git log --oneline -5` → HEAD is `73664ef`
+- `rsync -av spartan-native/public/ spartan-cli/public/` → synced 5 files
+- `systemctl --user status spartan-cli.service spartan-cli-https.service` → both active
+- `lsof -i :9002` → Python server PID 313693 on 0.0.0.0:9002
+- `curl -s http://127.0.0.1:9002/app.js | grep -n "DEFAULT_TOKEN\|wss\|WS URL"` → fixes confirmed
+- `curl -s http://100.78.120.128:9002/app.js | grep -n "DEFAULT_TOKEN\|wss\|WS URL"` → identical on Tailscale IP
+- `curl http://127.0.0.1:8797/api/health?token=...` → backend responds with session data, auth enabled
 
 ## Failures / Blockers
 1. **WebSocket Code 1006 on iPhone over Tailscale** (PRIMARY BLOCKER)
    - Backend works (verified with curl on the machine)
    - Proxy works (verified with curl)
-   - Root cause suspected: Safari uses `ws://` from HTTP page, needs `wss://` for Tailscale address
-   - Also suspected: auth token not sent because localStorage was cleared and no default token
+   - app.js fixes applied (DEFAULT_TOKEN + wss://) and committed
+   - **NOT YET TESTED on iPhone after this commit** — user needs to retest
+   - Possible remaining causes if still failing:
+     - Safari mixed-content blocking (page on HTTP, WS on WSS)
+     - Self-signed TLS cert not trusted on iPhone (need to install spartan-ca.cer)
+     - Safari Web Inspector needed to see actual console.log output
+
 2. **Android build blocked**: Java 25/26 on Fedora, Gradle needs Java 17 or 21. Requires `sudo dnf install java-21-openjdk`
 3. **iOS build impossible**: No macOS
 
 ## Current Status
-- **Committed code (HEAD 73664ef)**: Frontend loads in Safari, no JS errors, but WebSocket fails with Code 1006
-- **Uncommitted fixes**: Added DEFAULT_TOKEN fallback and wss:// logic to app.js (on disk, not committed)
-- Backend and proxy are running and functional
-- Python dev server not currently running
+- **Commit `67dff49`**: DEFAULT_TOKEN + wss:// fixes committed
+- **Unversioned spartan-cli/public/**: synced with spartan-native/public/
+- **Services running**: backend, HTTPS proxy, Python dev server all active
+- **Backend verified**: /api/health returns sessions, auth enabled, token matches
+- **Frontend verified**: served app.js contains all fixes on both localhost and Tailscale IP
+- **iPhone test**: PENDING — user must retest after this commit
 
 ## Ordered Next Steps
-### Step 1: Fix WebSocket auth + protocol
-The next session should:
-1. Apply the DEFAULT_TOKEN fix to `spartan-native/public/app.js` (the canonical source)
-2. Apply the wss:// fix for Tailscale addresses
-3. Copy updated files to `spartan-cli/public/`
-4. Restart the backend service
-5. Test from iPhone
+### Step 1: Test on iPhone
+1. Navigate Safari on iPhone to `http://100.78.120.128:9002`
+2. Tap Connect button
+3. If still Code 1006: use Safari Web Inspector (Mac required) to check console for "WS URL:" log
+4. Verify the WS URL uses `wss://` and includes the token parameter
 
-### Step 2: Commit the fixes
-```bash
-cd ~/Documents/spartan-native
-git add public/app.js
-git commit -m "Fix WebSocket: add default auth token and wss:// for Tailscale"
-```
+### Step 2: If still failing — install self-signed CA cert
+- Download `http://100.78.120.128:9002/spartan-ca.cer` (or from backend)
+- Install on iPhone via Settings > General > Profile
+- Trust the cert in Settings > General > About > Certificate Trust Settings
 
 ### Step 3: Android build (after Java 21 installed)
 ```bash
 sudo dnf install java-21-openjdk
 export JAVA_HOME=/usr/lib/jvm/java-21-openjdk
+cd ~/Documents/spartan-native
 npx cap sync android
 cd android && ./gradlew assembleDebug
 ```

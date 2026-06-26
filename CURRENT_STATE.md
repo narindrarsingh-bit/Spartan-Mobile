@@ -2,19 +2,21 @@
 
 ## What Works
 - Capacitor scaffold: `android/` and `ios/` platform folders generated
-- Git repo: 6 commits on master
+- Git repo: HEAD at `67dff49`
 - `public/index.html`: App shell with header, output, input, settings panel, profile-select dropdown
 - `public/styles.css`: Complete — 398 lines, all UI sections styled
-- `public/app.js`: 219 lines, WebSocket logic, settings, localStorage state — no null refs
+- `public/app.js`: 221 lines, WebSocket logic with DEFAULT_TOKEN + wss:// fixes (committed)
 - `public/icon.png`: 37KB app icon present
 - `capacitor.config.json`: Properly configured for Capacitor v7
-- `package.json`: Dependencies and build scripts
 - Web UI: loads in browser with zero JS errors, settings opens/closes, profile-select works, toast works
-- Backend WebSocket: works on localhost (verified with curl)
-- HTTPS proxy: works (verified with curl over Tailscale IP)
+- Backend WebSocket: works on localhost (verified with curl — 101 Switching Protocols)
+- HTTPS proxy: works (verified with curl over Tailscale IP — 101 Switching Protocols)
+- Backend /api/health: returns session data, auth enabled, token matches
+- Frontend served on port 9002: contains all fixes, accessible on both localhost and Tailscale IP
+- `spartan-cli/public/` synced with `spartan-native/public/`
 
 ## What Does Not Work
-- **WebSocket Code 1006 on iPhone over Tailscale** — Frontend loads but connection fails. Uncommitted fixes exist on disk (DEFAULT_TOKEN, wss://) but not committed.
+- **WebSocket Code 1006 on iPhone over Tailscale** — NOT YET RETESTED after DEFAULT_TOKEN + wss:// fixes committed
 - **Android build**: Blocked by Java version mismatch (Fedora has Java 25/26, Gradle needs 17 or 21)
 - **iOS build**: Impossible without macOS
 
@@ -22,22 +24,22 @@
 ```
 $ cd ~/Documents/spartan-native
 $ git status → clean working tree
-$ git log --oneline -5
-  73664ef Update docs: mark frontend blockers resolved, add test results
-  3af9aca Complete CSS: input area, settings panel, select, toast styles
-  da5bbb8 Add profile-select to settings panel (fixes null ref in app.js)
-  f6245de Handoff: fix CSS :root rewrite, update docs, document current blockers
-  f93ddb9 Fix WebSocket: use correct /terminal endpoint with session+profile params
-$ npx cap sync → works
-$ cd public && python3 -m http.server 9001 → UI renders correctly
-$ curl → backend and proxy both return 101 Switching Protocols
+$ git log --oneline -1 → 67dff49 Fix WebSocket: add default auth token and wss:// for Tailscale
+$ curl -s http://127.0.0.1:9002/app.js | grep -c "DEFAULT_TOKEN" → 2
+$ curl -s http://127.0.0.1:9002/app.js | grep -c "wss://" → 1
+$ diff spartan-native/public/ spartan-cli/public/ → identical
+$ systemctl --user status spartan-cli.service → active (PID 300076)
+$ systemctl --user status spartan-cli-https.service → active (PID 2809)
+$ lsof -i :9002 → Python HTTP server PID 313693
 ```
 
 ## Services Running
 - `spartan-cli.service` → backend on `127.0.0.1:8797`
 - `spartan-cli-https.service` → HTTPS proxy on `100.78.120.128:8797`
+- Python HTTP server → `0.0.0.0:9002` (serves spartan-native/public/)
 
 ## Known Risks
-- `spartan-cli/public/` is a copy of `spartan-native/public/` — any changes must be synced
+- `spartan-cli/` is NOT versioned — changes to backend/server files are not tracked in git
+- `spartan-cli/public/` is a copy — any future changes must be synced manually
 - Java 21 install requires `sudo`
-- WebSocket fixes on disk are not yet committed
+- Self-signed TLS cert may need manual trust on iPhone

@@ -5,7 +5,8 @@ A Capacitor-based native wrapper for the Spartan CLI web terminal. Wraps the exi
 
 ## Architecture
 - Source web build: `~/Documents/spartan-cli/dist/`
-- Capacitor web dir: `public/`
+- Capacitor web dir: `public/` (canonical source, versioned in this repo)
+- Mirror: `../spartan-cli/public/` (copied from spartan-native, NOT versioned)
 - Native platforms: `android/`, `ios/`
 - Config: `capacitor.config.json`
 - Backend: `spartan-cli/server/index.mjs` on `127.0.0.1:8797`
@@ -32,8 +33,8 @@ npx cap sync ios
 
 ### Development
 ```bash
-# Preview web UI
-cd public && python3 -m http.server 9001
+# Preview web UI (port 9002)
+cd public && python3 -m http.server 9002
 
 # Sync web to native platforms
 npx cap sync
@@ -49,18 +50,17 @@ systemctl --user restart spartan-cli-https.service
 ## Syncing Changes
 After modifying `public/` files, copy to the backend's public directory:
 ```bash
-cp public/* ../spartan-cli/public/
-systemctl --user restart spartan-cli.service
+rsync -av public/ ../spartan-cli/public/
 ```
 
 ## Current Status
-**Frontend complete.** WebSocket connection works from desktop browser and curl. Mobile over Tailscale may require DEFAULT_TOKEN fix and wss:// protocol adjustment.
+**Frontend complete.** WebSocket connection works from desktop browser and curl. DEFAULT_TOKEN + wss:// fixes committed in `67dff49`. Mobile over Tailscale pending iPhone retest.
 
 - See `CURRENT_STATE.md` for exact status
 - See `HANDOFF.md` for blockers and next steps
 - See `PROJECT_LOG.md` for session history
 
 ## Important Notes
-- `spartan-cli/` is read-only source — changes go in `spartan-native/`
+- `spartan-cli/` is NOT versioned — changes go in `spartan-native/`, then synced
 - Token stored in `/home/roy/.config/spartan-cli/env`
 - Git repo is the durable truth surface
