@@ -8,16 +8,20 @@ A Capacitor-based native wrapper for the Spartan CLI web terminal. Wraps the exi
 - Capacitor web dir: `public/`
 - Native platforms: `android/`, `ios/`
 - Config: `capacitor.config.json`
-- WebSocket: `ws://<server>/terminal?session=native&profile=<profile>&token=...`
+- Backend: `spartan-cli/server/index.mjs` on `127.0.0.1:8797`
+- HTTPS proxy: `spartan-cli/server/https-proxy.mjs` on `100.78.120.128:8797`
+- WebSocket endpoint: `/terminal?session=native&profile=<profile>&token=<token>`
 
 ## How to Build
 
 ### Android
 ```bash
+sudo dnf install java-21-openjdk  # Required — Fedora has Java 25/26
+export JAVA_HOME=/usr/lib/jvm/java-21-openjdk
+cd ~/Documents/spartan-native
 npx cap sync android
-# Then open android/ in Android Studio, build APK
+cd android && ./gradlew assembleDebug
 ```
-**Note**: Requires Java 21. Fedora currently has Java 25/26. Install Java 21 with sudo.
 
 ### iOS
 ```bash
@@ -29,21 +33,34 @@ npx cap sync ios
 ### Development
 ```bash
 # Preview web UI
-cd public && python3 -m http.server 9000
+cd public && python3 -m http.server 9001
 
 # Sync web to native platforms
 npx cap sync
+
+# Backend (serves static files too)
+cd ../spartan-cli
+systemctl --user restart spartan-cli.service
+
+# HTTPS proxy
+systemctl --user restart spartan-cli-https.service
+```
+
+## Syncing Changes
+After modifying `public/` files, copy to the backend's public directory:
+```bash
+cp public/* ../spartan-cli/public/
+systemctl --user restart spartan-cli.service
 ```
 
 ## Current Status
-**Work in progress.** Frontend has known bugs:
-- `styles.css` is incomplete (missing input/settings/toast styles)
-- `app.js` references `#profile-select` not in HTML (null reference error)
+**Frontend complete.** WebSocket connection works from desktop browser and curl. Mobile over Tailscale may require DEFAULT_TOKEN fix and wss:// protocol adjustment.
+
 - See `CURRENT_STATE.md` for exact status
-- See `HANDOFF.md` for next steps
+- See `HANDOFF.md` for blockers and next steps
+- See `PROJECT_LOG.md` for session history
 
 ## Important Notes
-- Spartan CLI source (`../spartan-cli/`) is read-only — never modify it
+- `spartan-cli/` is read-only source — changes go in `spartan-native/`
 - Token stored in `/home/roy/.config/spartan-cli/env`
 - Git repo is the durable truth surface
-- See `HANDOFF.md` for current blockers and next steps
