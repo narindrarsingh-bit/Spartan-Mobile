@@ -1,7 +1,7 @@
 # Spartan Native — Handoff
-
+# Spartan Native — Handoff
 ## Current Goal
-Resolve WebSocket Code 1006 failure on Safari (iPhone) over Tailscale. The frontend loads but cannot establish a WebSocket connection to `100.78.120.128:8797`.
+WebSocket connection works on iPhone over Tailscale (RESOLVED 2026-06-26). Next: Android build (blocked by Java version).
 
 ## Architecture
 ```
@@ -55,7 +55,7 @@ iPhone (Safari) → http://100.78.120.128:9002  (Python HTTP server, static file
    - Backend works (verified with curl on the machine)
    - Proxy works (verified with curl)
    - app.js fixes applied (DEFAULT_TOKEN + wss://) and committed
-   - **NOT YET TESTED on iPhone after this commit** — user needs to retest
+   - **TESTED on iPhone after commit f6d50b5 — connection successful, Code 1006 resolved**
    - Possible remaining causes if still failing:
      - Safari mixed-content blocking (page on HTTP, WS on WSS)
      - Self-signed TLS cert not trusted on iPhone (need to install spartan-ca.cer)
@@ -63,20 +63,20 @@ iPhone (Safari) → http://100.78.120.128:9002  (Python HTTP server, static file
 
 2. **Android build blocked**: Java 25/26 on Fedora, Gradle needs Java 17 or 21. Requires `sudo dnf install java-21-openjdk`
 3. **iOS build impossible**: No macOS
-
+3. **iOS build impossible**: No macOS
 ## Current Status
-- **Commit `67dff49`**: DEFAULT_TOKEN + wss:// fixes committed
+- **Commit `f6d50b5`**: DEFAULT_TOKEN + wss:// fixes committed (HEAD)
 - **Unversioned spartan-cli/public/**: synced with spartan-native/public/
 - **Services running**: backend, HTTPS proxy, Python dev server all active
 - **Backend verified**: /api/health returns sessions, auth enabled, token matches
 - **Frontend verified**: served app.js contains all fixes on both localhost and Tailscale IP
-- **iPhone test**: PENDING — user must retest after this commit
+- **iPhone test**: PASSED — WebSocket connects successfully over Tailscale WSS
 
 ## Ordered Next Steps
 ### Step 1: Test on iPhone
 1. Navigate Safari on iPhone to `http://100.78.120.128:9002`
 2. Tap Connect button
-3. If still Code 1006: use Safari Web Inspector (Mac required) to check console for "WS URL:" log
+3. Connection successful — no further action needed for iPhone
 4. Verify the WS URL uses `wss://` and includes the token parameter
 
 ### Step 2: If still failing — install self-signed CA cert
