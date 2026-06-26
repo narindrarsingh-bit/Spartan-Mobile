@@ -1,16 +1,72 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <meta name="theme-color" content="#050505" />
-    <link rel="manifest" href="/manifest.webmanifest" />
-    <link rel="apple-touch-icon" href="/icon.png" />
-    <title>Spartan CLI</title>
-    <script type="module" crossorigin src="/assets/index-DJwSZHcw.js"></script>
-    <link rel="stylesheet" crossorigin href="/assets/index-DDRK1d_A.css">
-  </head>
-  <body>
-    <div id="app"></div>
-  </body>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#2b2d31">
+  <title>Spartan</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="icon" type="image/png" href="icon.png">
+</head>
+<body>
+  <div id="app">
+    <header id="header">
+      <div class="header-left">
+        <div class="server-icon"><span>S</span></div>
+        <div class="server-info">
+          <div class="server-name">Spartan</div>
+          <div class="server-status" id="status">connecting</div>
+        </div>
+      </div>
+      <button class="header-btn" id="settings-btn" aria-label="Settings">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+        </svg>
+      </button>
+    </header>
+    <main id="output" role="log" aria-live="polite"></main>
+    <footer id="input-area">
+      <form id="command-form" autocomplete="off">
+        <input type="text" id="command-input" placeholder="Enter command..." autocomplete="off" autocapitalize="none" spellcheck="false">
+        <button type="submit" id="send-btn" aria-label="Send">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+        </button>
+      </form>
+    </footer>
+  </div>
+  <div id="settings-panel" class="settings-panel" hidden>
+    <div class="settings-overlay" id="settings-overlay"></div>
+    <div class="settings-content">
+      <div class="settings-header">
+        <span>Server Settings</span>
+        <button id="close-settings" aria-label="Close">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+      <div class="settings-body">
+        <div class="setting-group">
+          <label for="server-address">Server Address</label>
+          <input type="text" id="server-address" placeholder="100.78.120.128:8797">
+        </div>
+        <div class="setting-group">
+          <label for="auth-token">Auth Token</label>
+          <input type="password" id="auth-token" placeholder="Enter auth token">
+        </div>
+        <div class="setting-group">
+          <label for="font-size">Font Size</label>
+          <input type="range" id="font-size" min="12" max="24" value="14">
+        </div>
+        <div class="setting-group">
+          <button id="connect-btn" class="btn-primary">Connect</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div id="toast" class="toast" hidden></div>
+  <script src="app.js"></script>
+</body>
 </html>
