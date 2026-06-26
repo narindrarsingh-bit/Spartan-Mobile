@@ -2,7 +2,7 @@
 
 ## What Works
 - Capacitor scaffold: `android/` and `ios/` platform folders generated
-- Git repo: HEAD at `67dff49`
+- Git repo: HEAD at `b53dbef`
 - `public/index.html`: App shell with header, output, input, settings panel, profile-select dropdown
 - `public/styles.css`: Complete — 398 lines, all UI sections styled
 - `public/app.js`: 221 lines, WebSocket logic with DEFAULT_TOKEN + wss:// fixes (committed)
@@ -16,7 +16,7 @@
 - `spartan-cli/public/` synced with `spartan-native/public/`
 
 ## What Does Not Work
-- **WebSocket Code 1006 on iPhone over Tailscale** — NOT YET RETESTED after DEFAULT_TOKEN + wss:// fixes committed
+- **WebSocket on iPhone over Tailscale** — RESOLVED, tested and confirmed working (2026-06-26)
 - **Android build**: Blocked by Java version mismatch (Fedora has Java 25/26, Gradle needs 17 or 21)
 - **iOS build**: Impossible without macOS
 
@@ -24,13 +24,14 @@
 ```
 $ cd ~/Documents/spartan-native
 $ git status → clean working tree
-$ git log --oneline -1 → 67dff49 Fix WebSocket: add default auth token and wss:// for Tailscale
+$ git log --oneline -1 → b53dbef Update docs: iPhone test passed, WebSocket Code 1006 resolved
 $ curl -s http://127.0.0.1:9002/app.js | grep -c "DEFAULT_TOKEN" → 2
 $ curl -s http://127.0.0.1:9002/app.js | grep -c "wss://" → 1
 $ diff spartan-native/public/ spartan-cli/public/ → identical
 $ systemctl --user status spartan-cli.service → active (PID 300076)
 $ systemctl --user status spartan-cli-https.service → active (PID 2809)
-$ lsof -i :9002 → Python HTTP server PID 313693
+$ lsof -i :9002 → Python HTTP server PID 441648 (restarted 2026-06-26)
+$ curl http://100.78.120.128:9002 → iPhone Safari test: WebSocket connects successfully
 ```
 
 ## Services Running

@@ -82,8 +82,18 @@ Apply the DEFAULT_TOKEN + wss:// fixes to canonical public/app.js, sync to spart
 ```
 
 ### Remaining Work
-1. **Test on iPhone** — user must navigate to `http://100.78.120.128:9002` and tap Connect
-2. If still failing: use Safari Web Inspector to check console for "WS URL:" log output
-3. May need to install self-signed CA cert on iPhone (`spartan-ca.cer`)
-4. Install Java 21, build Android APK
-5. Deploy and test on device
+1. ~~Test on iPhone~~ — DONE (2026-06-26)
+2. ~~If still failing: use Safari Web Inspector~~ — Not needed, connection works
+3. Install Java 21, build Android APK
+4. Deploy and test on device
+
+## 2026-06-26 — Session: iPhone Retest + Status Update
+
+### Goal
+Retest WebSocket on iPhone after DEFAULT_TOKEN + wss:// fixes.
+
+### Result
+- Dev server on :9002 was down — restarted (PID 441648)
+- iPhone Safari test: **PASSED** — WebSocket connects successfully over Tailscale
+- Code 1006 resolved. Root cause was missing auth token in WebSocket URL.
+- Docs updated, committed as `b53dbef`.
