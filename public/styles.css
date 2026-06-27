@@ -723,7 +723,7 @@ body {
 .input-bar {
   flex-shrink: 0;
   min-width: 0;
-  padding: 8px 16px 7px;
+  padding: 8px 16px 6px;
   background: var(--bg-primary);
 }
 
@@ -732,8 +732,8 @@ body {
   align-items: center;
   gap: 8px;
   width: 93%;
-  margin-left: 2%;
-  margin-right: 5%;
+  margin-left: 2.5%;
+  margin-right: 4.5%;
   min-width: 0;
   background: var(--bg-tertiary);
   border-radius: 24px;
