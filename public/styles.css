@@ -23,6 +23,8 @@ html, body {
   background: var(--bg-primary);
   color: var(--text-primary);
   -webkit-text-size-adjust: 100%;
+  position: fixed;
+  width: 100%;
 }
 
 #app {
@@ -314,6 +316,7 @@ html, body {
   width: 72px;
   min-width: 72px;
   height: 100dvh;
+  height: 100%;
   background: #1e1f22;
   display: flex;
   flex-direction: column;
@@ -412,6 +415,7 @@ html, body {
   width: 0;
   min-width: 0;
   height: 100dvh;
+  height: 100%;
   background: #2b2d31;
   display: flex;
   flex-direction: column;
@@ -594,6 +598,7 @@ html, body {
   display: flex;
   flex-direction: column;
   height: 100dvh;
+  height: 100%;
   background: var(--bg-primary);
 }
 
