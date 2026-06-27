@@ -66,10 +66,14 @@ html, body {
   height: 8px;
   border-radius: 50%;
   background: var(--text-muted);
+  transition: background 0.3s;
 }
 .status-dot.connected { background: var(--green); }
 .status-dot.disconnected { background: var(--red); }
-.status-dot.connecting { background: var(--yellow); }
+.status-dot.connecting {
+  background: var(--yellow);
+  animation: pulse 1s ease-in-out infinite;
+}
 
 /* Profile tabs */
 #profile-tabs {
@@ -283,7 +287,7 @@ html, body {
   position: fixed;
   top: 60px;
   left: 50%;
-  transform: translateX(-50%);
+  transform: translateX(-50%) translateY(-12px);
   padding: 8px 16px;
   background: var(--bg-tertiary);
   border-radius: 6px;
@@ -291,11 +295,14 @@ html, body {
   font-size: 13px;
   z-index: 2000;
   opacity: 0;
-  transition: opacity 0.2s;
+  transition: opacity 0.2s, transform 0.25s ease;
   pointer-events: none;
 }
 
-.toast.show { opacity: 1; }
+.toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
 
 /* === SIDEBAR (Discord-style agent rail) === */
 
@@ -620,10 +627,14 @@ html, body {
   height: 8px;
   border-radius: 50%;
   background: var(--text-muted);
+  transition: background 0.3s;
 }
 .status-dot.connected { background: var(--green); }
 .status-dot.disconnected { background: var(--red); }
-.status-dot.connecting { background: var(--yellow); }
+.status-dot.connecting {
+  background: var(--yellow);
+  animation: pulse 1s ease-in-out infinite;
+}
 
 .status-text {
   font-size: 12px;
@@ -739,10 +750,13 @@ html, body {
   align-items: center;
   justify-content: center;
   z-index: 1000;
+  opacity: 1;
+  transition: opacity 0.2s;
 }
 
 .modal-overlay.hidden {
   display: none;
+  opacity: 0;
 }
 
 .modal {
@@ -753,6 +767,12 @@ html, body {
   display: flex;
   flex-direction: column;
   gap: 16px;
+  transform: scale(1);
+  transition: transform 0.2s ease;
+}
+
+.modal-overlay.hidden .modal {
+  transform: scale(0.95);
 }
 
 .modal h2 {
@@ -893,4 +913,38 @@ html, body {
   .terminal-session {
     padding: 6px;
   }
+}
+
+/* === KEYFRAMES === */
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.terminal-session {
+  animation: fadeIn 0.3s ease;
+}
+
+.thread-panel .thread-add,
+.thread-panel .thread-circle {
+  animation: fadeIn 0.2s ease backwards;
+}
+
+.thread-panel .thread-circle:nth-child(2)  { animation-delay: 0.04s; }
+.thread-panel .thread-circle:nth-child(3)  { animation-delay: 0.08s; }
+.thread-panel .thread-circle:nth-child(4)  { animation-delay: 0.12s; }
+.thread-panel .thread-circle:nth-child(5)  { animation-delay: 0.16s; }
+.thread-panel .thread-circle:nth-child(6)  { animation-delay: 0.20s; }
+.thread-panel .thread-circle:nth-child(7)  { animation-delay: 0.24s; }
+
+/* Input bar focus glow */
+#command-input:focus {
+  box-shadow: 0 0 0 2px var(--accent);
+  border-radius: 4px;
 }
