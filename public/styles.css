@@ -12,6 +12,13 @@
   --yellow: #f0b232;
   --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
   --font-mono: 'SF Mono', 'Cascadia Code', 'Consolas', monospace;
+  --app-height: 100dvh;
+  --rail-width: 72px;
+  --thread-width: 64px;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -19,13 +26,18 @@
 html, body {
   width: 100%;
   height: 100%;
+  min-height: 100%;
   overflow: hidden;
   margin: 0;
   padding: 0;
   font-family: var(--font-sans);
-  background: var(--bg-primary);
+  background: var(--bg-tertiary);
   color: var(--text-primary);
   -webkit-text-size-adjust: 100%;
+}
+
+body {
+  overflow: hidden;
 }
 
 #app {
@@ -33,9 +45,12 @@ html, body {
   top: env(safe-area-inset-top, 0px);
   left: 0;
   right: 0;
-  bottom: env(safe-area-inset-bottom, 0px);
+  bottom: 0;
   display: flex;
   flex-direction: row;
+  padding: 0;
+  overflow: hidden;
+  background: var(--bg-primary);
 }
 
 /* Header */
@@ -123,10 +138,11 @@ html, body {
 /* Output (messages area) */
 #output {
   flex: 1;
-  overflow-y: auto;
-  padding: 12px 16px;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  padding: 0;
   overflow-x: hidden;
-  -webkit-overflow-scrolling: touch;
 }
 
 #output::-webkit-scrollbar { width: 6px; }
@@ -313,17 +329,19 @@ html, body {
 /* === SIDEBAR (Discord-style agent rail) === */
 
 .sidebar {
-  width: 72px;
-  min-width: 72px;
+  width: var(--rail-width);
+  min-width: var(--rail-width);
+  height: 100%;
   background: #1e1f22;
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding-top: 12px;
-  padding-bottom: 0;
+  padding-top: calc(12px + var(--safe-top));
+  padding-bottom: var(--safe-bottom);
   overflow-y: auto;
   overflow-x: hidden;
   flex-shrink: 0;
+  min-height: 0;
 }
 
 .sidebar::-webkit-scrollbar { width: 4px; }
@@ -413,18 +431,22 @@ html, body {
 .thread-panel {
   width: 0;
   min-width: 0;
+  height: 100%;
   background: #2b2d31;
   display: flex;
   flex-direction: column;
   align-items: center;
+  padding-top: var(--safe-top);
+  padding-bottom: var(--safe-bottom);
   overflow: hidden;
   flex-shrink: 0;
+  min-height: 0;
   transition: width 0.2s ease, min-width 0.2s ease;
 }
 
 .thread-panel.open {
-  width: 64px;
-  min-width: 64px;
+  width: var(--thread-width);
+  min-width: var(--thread-width);
 }
 
 .thread-panel-header {
@@ -592,34 +614,44 @@ html, body {
 .main {
   flex: 1;
   min-width: 0;
+  min-height: 0;
+  height: 100%;
   display: flex;
   flex-direction: column;
   background: var(--bg-primary);
+  overflow: hidden;
 }
 
 .topbar {
-  height: 48px;
-  min-height: 48px;
+  height: calc(48px + var(--safe-top));
+  min-height: calc(48px + var(--safe-top));
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 16px;
+  padding: var(--safe-top) calc(16px + var(--safe-right)) 0 16px;
   background: var(--bg-primary);
   border-bottom: 1px solid var(--bg-tertiary);
   flex-shrink: 0;
+  min-width: 0;
 }
 
 .topbar-title {
+  min-width: 0;
   font-size: 15px;
   font-weight: 700;
   color: var(--text-primary);
   margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .topbar-status {
   display: flex;
   align-items: center;
   gap: 6px;
+  min-width: 0;
+  flex-shrink: 0;
 }
 
 .status-dot {
@@ -646,6 +678,7 @@ html, body {
 .output-wrap {
   flex: 1;
   min-height: 0;
+  min-width: 0;
   overflow: hidden;
   -webkit-overflow-scrolling: touch;
 }
@@ -693,14 +726,17 @@ html, body {
 
 .input-bar {
   flex-shrink: 0;
-  padding: 8px 12px 12px;
+  min-width: 0;
+  padding: 8px calc(12px + var(--safe-right)) calc(12px + var(--safe-bottom)) 12px;
   background: var(--bg-primary);
 }
 
-#command-form {
+.input-shell {
   display: flex;
   align-items: center;
   gap: 8px;
+  width: 100%;
+  min-width: 0;
   background: var(--bg-tertiary);
   border-radius: 24px;
   padding: 6px 8px 6px 16px;
@@ -831,13 +867,16 @@ html, body {
 /* === MOBILE — always visible, compact sidebar === */
 
 @media (max-width: 600px) {
+  :root {
+    --rail-width: 52px;
+    --thread-width: 48px;
+  }
   .sidebar {
-    width: 56px;
-    min-width: 56px;
+    padding-top: calc(8px + var(--safe-top));
   }
   .sidebar-icon {
-    width: 40px;
-    height: 40px;
+    width: 38px;
+    height: 38px;
   }
   .sidebar-icon svg {
     width: 24px;
@@ -858,8 +897,8 @@ html, body {
     border-radius: 20px;
   }
   .thread-panel.open {
-    width: 52px;
-    min-width: 52px;
+    width: var(--thread-width);
+    min-width: var(--thread-width);
   }
   .thread-circle,
   .thread-add {
@@ -902,18 +941,65 @@ html, body {
     height: 1.2px;
   }
   .topbar {
-    height: 44px;
-    min-height: 44px;
+    height: calc(44px + var(--safe-top));
+    min-height: calc(44px + var(--safe-top));
+    padding: var(--safe-top) calc(10px + var(--safe-right)) 0 10px;
+    gap: 8px;
+  }
+  .topbar-title {
+    font-size: 14px;
+  }
+  .status-text {
+    max-width: 76px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
   .input-bar {
-    padding: 6px 8px 8px;
+    padding: 6px calc(8px + var(--safe-right)) calc(8px + var(--safe-bottom)) 8px;
+  }
+  .input-shell {
+    gap: 6px;
+    padding: 5px 6px 5px 12px;
+  }
+  #command-input {
+    height: 34px;
+    font-size: 16px;
+  }
+  .btn-send {
+    width: 32px;
+    height: 32px;
   }
   .output {
     padding: 0;
     font-size: 12px;
   }
   .terminal-session {
-    padding: 6px;
+    padding: 4px 5px;
+  }
+}
+
+@media (max-width: 380px) {
+  :root {
+    --rail-width: 46px;
+    --thread-width: 42px;
+  }
+  .sidebar-icon {
+    width: 34px;
+    height: 34px;
+  }
+  .thread-circle,
+  .thread-add {
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+    min-height: 32px;
+  }
+  .topbar-status {
+    display: none;
+  }
+  .terminal-session {
+    padding: 3px 4px;
   }
 }
 
