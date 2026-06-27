@@ -292,34 +292,6 @@
     });
   }
 
-  // === MOBILE HAMBURGER ===
-  var topbarEl = document.getElementById("topbar");
-  var sidebarEl = document.getElementById("sidebar");
-
-  if (topbarEl) {
-    topbarEl.addEventListener("click", function(e) {
-      // Only toggle on mobile when clicking the hamburger area (left 44px)
-      if (window.innerWidth <= 600) {
-        var rect = topbarEl.getBoundingClientRect();
-        var clickX = e.clientX - rect.left;
-        if (clickX < 44) {
-          sidebarEl.classList.toggle("mobile-open");
-          return;
-        }
-      }
-    });
-  }
-
-  // Close sidebar when tapping main content on mobile
-  var outputWrapEl = document.getElementById("output-wrap");
-  if (outputWrapEl && sidebarEl) {
-    outputWrapEl.addEventListener("click", function() {
-      if (window.innerWidth <= 600) {
-        sidebarEl.classList.remove("mobile-open");
-      }
-    });
-  }
-
   // === INIT ===
   loadState();
   renderSidebar();

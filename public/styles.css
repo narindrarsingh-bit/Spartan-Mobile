@@ -586,40 +586,44 @@ html, body {
   color: var(--text-primary);
 }
 
-/* === MOBILE — hide sidebar, show hamburger === */
+/* === MOBILE — always visible, compact sidebar === */
 
 @media (max-width: 600px) {
   .sidebar {
-    position: fixed;
-    left: -72px;
-    top: 0;
-    bottom: 0;
-    z-index: 200;
-    transition: left 0.25s ease;
+    width: 56px;
+    min-width: 56px;
   }
-
-  .sidebar.mobile-open {
-    left: 0;
+  .sidebar-icon {
+    width: 40px;
+    height: 40px;
   }
-
-  .main {
-    height: 100dvh;
-  }
-
-  .topbar {
-    padding-left: 44px;
-  }
-
-  .topbar::before {
-    content: '';
-    position: absolute;
-    left: 8px;
-    top: 12px;
-    width: 32px;
+  .sidebar-icon svg {
+    width: 24px;
     height: 24px;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' fill='%23949ba4'%3E%3Cpath d='M3 6h14v2H3zm0 5h14v2H3zm0 5h14v2H3z'/%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: center;
-    cursor: pointer;
+  }
+  .sidebar-icon svg text {
+    font-size: 16px;
+  }
+  .sidebar-icon.agent-active::before {
+    left: -6px;
+    width: 4px;
+    height: 28px;
+  }
+  .sidebar-icon:active {
+    border-radius: 20px;
+  }
+  .sidebar-icon.agent-active {
+    border-radius: 20px;
+  }
+  .topbar {
+    height: 44px;
+    min-height: 44px;
+  }
+  .input-bar {
+    padding: 0 12px 12px;
+  }
+  .output {
+    padding: 8px 12px;
+    font-size: 12px;
   }
 }
