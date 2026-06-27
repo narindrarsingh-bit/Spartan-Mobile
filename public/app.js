@@ -47,6 +47,13 @@
   var currentAgent = null;
   var resizeTimer = null;
 
+  function syncViewport() {
+    var height = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+    if (height > 0) {
+      document.documentElement.style.setProperty("--app-height", height + "px");
+    }
+  }
+
   function isTouchViewport() {
     return (window.matchMedia && window.matchMedia("(pointer: coarse)").matches) || window.innerWidth <= 720;
   }
@@ -661,11 +668,31 @@
   }
 
   window.addEventListener("resize", function() {
+    syncViewport();
     clearTimeout(resizeTimer);
     resizeTimer = setTimeout(function() { fitThread(activeThread); }, 120);
   });
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener("resize", function() {
+      syncViewport();
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(function() { fitThread(activeThread); }, 120);
+    });
+    window.visualViewport.addEventListener("scroll", function() {
+      syncViewport();
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(function() { fitThread(activeThread); }, 120);
+    });
+  }
 
   // === INIT ===
+  syncViewport();
+  function fixHeight() {
+    document.documentElement.style.setProperty('--real-height', window.innerHeight + 'px');
+  }
+  fixHeight();
+  window.addEventListener('resize', fixHeight);
+  window.addEventListener('orientationchange', function() { setTimeout(fixHeight, 150); });
   loadState();
   renderSidebar();
   showEmptyState();
