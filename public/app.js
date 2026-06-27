@@ -688,11 +688,19 @@
   // === INIT ===
   syncViewport();
   function fixHeight() {
-    document.documentElement.style.setProperty('--real-height', window.innerHeight + 'px');
+    var h = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+    document.documentElement.style.setProperty('--real-height', h + 'px');
   }
   fixHeight();
   window.addEventListener('resize', fixHeight);
   window.addEventListener('orientationchange', function() { setTimeout(fixHeight, 150); });
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', fixHeight);
+    window.visualViewport.addEventListener('scroll', fixHeight);
+  }
+  // Poll aggressively for first 2 seconds (iOS PWA is slow to settle)
+  var hPoll = setInterval(function() { fixHeight(); }, 200);
+  setTimeout(function() { clearInterval(hPoll); }, 2000);
   loadState();
   renderSidebar();
   showEmptyState();

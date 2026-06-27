@@ -38,7 +38,7 @@ body {
 }
 
 #app {
-  height: 100dvh;
+  height: var(--real-height, 100vh);
   display: flex;
   flex-direction: row;
   padding: 0;
