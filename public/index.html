@@ -6,6 +6,7 @@
   <meta name="color-scheme" content="dark">
   <title>Spartan</title>
   <link rel="icon" href="spart.png" type="image/png">
+  <link rel="stylesheet" href="vendor/xterm/xterm.css">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -58,7 +59,7 @@
 
       <!-- Scrollable output -->
       <div class="output-wrap" id="output-wrap">
-        <pre class="output" id="output"></pre>
+        <div class="output terminal-mount" id="output"></div>
       </div>
 
       <!-- Input bar -->
@@ -97,6 +98,8 @@
     </div>
   </div>
 
+  <script src="vendor/xterm/xterm.js"></script>
+  <script src="vendor/xterm-addon-fit/addon-fit.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

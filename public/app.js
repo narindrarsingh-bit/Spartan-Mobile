@@ -23,7 +23,6 @@
 
   // === ELEMENT REFS ===
   var outputEl      = document.getElementById("output");
-  var outputWrap    = document.getElementById("output-wrap");
   var inputEl       = document.getElementById("command-input");
   var formEl        = document.getElementById("command-form");
   var statusDot     = document.getElementById("status-dot");
@@ -45,15 +44,23 @@
   var activeThread = null;
   var threadPanelAgent = null;
   var wiggleMode = false;
-  var threadCounter = {};  // agentId -> next number
   var currentAgent = null;
+  var resizeTimer = null;
+
+  function isTouchViewport() {
+    return (window.matchMedia && window.matchMedia("(pointer: coarse)").matches) || window.innerWidth <= 720;
+  }
 
   function loadState() {
     try {
       var savedServer = localStorage.getItem("spartan-server") || "";
       var savedToken  = localStorage.getItem("spartan-token") || "";
       if (savedServer) settingServer.value = savedServer;
-      if (savedToken)  settingToken.value  = savedToken;
+      if (savedToken && savedToken !== DEFAULT_TOKEN) {
+        savedToken = DEFAULT_TOKEN;
+        localStorage.setItem("spartan-token", DEFAULT_TOKEN);
+      }
+      if (settingToken) settingToken.value = savedToken || DEFAULT_TOKEN;
     } catch(e) {}
   }
 
@@ -123,7 +130,9 @@
     threadPanelAgent = agent;
     highlightSidebar(agent);
     threadPanel.classList.add("open");
-    threadPanelName.textContent = agent.initial;
+    threadPanelName.innerHTML = agent.icon
+      ? '<img src="' + agent.icon + '" alt="' + agent.label + '" width="24" height="24" class="agent-img">'
+      : '';
     renderThreadPanel();
   }
 
@@ -173,17 +182,13 @@
           circle.classList.add("active");
         }
 
-        if (agent.icon) {
-          circle.innerHTML = '<img src="' + agent.icon + '" alt="' + thread.label + '" width="40" height="40" class="agent-img">';
-        } else {
-          circle.innerHTML =
-            '<svg viewBox="0 0 48 48" width="48" height="48">' +
-              '<circle cx="24" cy="24" r="24" fill="' + agent.color + '"/>' +
-              '<text x="24" y="30" text-anchor="middle" fill="#fff" ' +
-                    'font-size="16" font-weight="700" font-family="system-ui, sans-serif">' +
-                thread.num + '</text>' +
-            '</svg>';
-        }
+        circle.innerHTML =
+          '<svg viewBox="0 0 48 48" width="48" height="48">' +
+            '<circle cx="24" cy="24" r="24" fill="' + agent.color + '"/>' +
+            '<text x="24" y="30" text-anchor="middle" fill="#fff" ' +
+                  'font-size="16" font-weight="700" font-family="system-ui, sans-serif">' +
+              thread.num + '</text>' +
+          '</svg>';
 
         // X close button
         var closeBtn = document.createElement("div");
@@ -233,8 +238,15 @@
 
   // === THREAD LIFECYCLE ===
   function createThread(agent) {
-    threadCounter[agent.id] = (threadCounter[agent.id] || 0) + 1;
-    var num = threadCounter[agent.id];
+    var existing = threads[agent.id];
+    if (existing && existing.length >= 5) {
+      showToast("Max 5 threads per agent");
+      return;
+    }
+    // Find lowest available number 1-5
+    var used = (existing || []).map(function(t) { return t.num; });
+    var num = 1;
+    while (used.indexOf(num) >= 0) num++;
 
     var thread = {
       id: uuid(),
@@ -242,11 +254,15 @@
       num: num,
       label: agent.label + " " + num,
       ws: null,
-      lines: [],
+      term: null,
+      fit: null,
+      termEl: null,
+      opened: false,
       status: "disconnected",
       reconnectTimer: null,
       pendingWrites: []
     };
+    ensureTerminal(thread);
 
     if (!threads[agent.id]) threads[agent.id] = [];
     threads[agent.id].push(thread);
@@ -262,17 +278,7 @@
     activeThread = thread;
     currentAgent = thread.agent;
 
-    // Restore thread's output
-    outputEl.textContent = "";
-    for (var i = 0; i < thread.lines.length; i++) {
-      var span = document.createElement("span");
-      span.textContent = thread.lines[i];
-      outputEl.appendChild(span);
-      if (i < thread.lines.length - 1) {
-        outputEl.appendChild(document.createTextNode("\n"));
-      }
-    }
-    scrollToBottom();
+    showTerminal(thread);
 
     updateTopbar();
     highlightSidebar(thread.agent);
@@ -290,6 +296,10 @@
     if (thread.ws) {
       try { thread.ws.close(); } catch(e) {}
       thread.ws = null;
+    }
+    if (thread.term) {
+      try { thread.term.dispose(); } catch(e) {}
+      thread.term = null;
     }
     if (thread.reconnectTimer) {
       clearTimeout(thread.reconnectTimer);
@@ -366,36 +376,105 @@
   }
 
   // === OUTPUT ===
-  function stripAnsi(raw) {
-    return raw
-      .replace(/\x1b\[[0-9;>? ]*[A-Za-z]/g, "")
-      .replace(/\x1b][^\x07\x1b]*(?:\x07|\x1b\\)/g, "")
-      .replace(/\x1b[A-Z]/g, "")
-      .replace(/\r/g, "")
-      .replace(/[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]/g, "");
-  }
-
-  function appendOutput(text) {
-    if (!activeThread) return;
-    var clean = stripAnsi(text);
-    if (!clean) return;
-    var lines = clean.split("\n");
-    for (var i = 0; i < lines.length; i++) {
-      if (lines[i].length > 0) {
-        var span = document.createElement("span");
-        span.textContent = lines[i];
-        outputEl.appendChild(span);
-        activeThread.lines.push(lines[i]);
-      }
-      if (i < lines.length - 1) {
-        outputEl.appendChild(document.createTextNode("\n"));
-      }
+  function ensureTerminal(thread) {
+    if (thread.term) return thread;
+    if (!window.Terminal || !window.FitAddon) {
+      showToast("Terminal runtime missing");
+      return thread;
     }
-    scrollToBottom();
+    var term = new window.Terminal({
+      cursorBlink: false,
+      fontFamily: '"SFMono-Regular", "Cascadia Code", "Roboto Mono", monospace',
+      fontSize: isTouchViewport() ? 11 : 13,
+      lineHeight: isTouchViewport() ? 1.15 : 1.2,
+      letterSpacing: 0,
+      scrollback: 4000,
+      theme: {
+        background: "#313338",
+        foreground: "#dbdee1",
+        cursor: "#5865f2",
+        black: "#1e1f22",
+        blue: "#9ab6ff",
+        cyan: "#3fe0e8",
+        green: "#23a559",
+        magenta: "#b785ff",
+        red: "#f23f43",
+        white: "#f5f7fb",
+        yellow: "#f0b232"
+      }
+    });
+    var fit = new window.FitAddon.FitAddon();
+    var el = document.createElement("div");
+    el.className = "terminal-session";
+    term.loadAddon(fit);
+    term.onData(function(data) {
+      if (isTouchViewport()) {
+        try { inputEl.focus(); } catch(e) {}
+        return;
+      }
+      writeToThread(thread, data);
+      try { inputEl.focus(); } catch(e) {}
+    });
+    term.onResize(function(size) {
+      sendResize(thread, size);
+    });
+    thread.term = term;
+    thread.fit = fit;
+    thread.termEl = el;
+    return thread;
   }
 
-  function scrollToBottom() {
-    outputWrap.scrollTop = outputWrap.scrollHeight;
+  function showTerminal(thread) {
+    if (!thread || !outputEl) return;
+    ensureTerminal(thread);
+    outputEl.replaceChildren(thread.termEl);
+    if (thread.term && !thread.opened) {
+      thread.term.open(thread.termEl);
+      thread.opened = true;
+    }
+    fitThread(thread);
+    setTimeout(function() { fitThread(thread); }, 40);
+    setTimeout(function() { fitThread(thread); }, 180);
+    setTimeout(function() { fitThread(thread); }, 500);
+    if (window.requestAnimationFrame) {
+      requestAnimationFrame(function() { fitThread(thread); });
+    }
+    try { inputEl.focus(); } catch(e) {}
+  }
+
+  function fitThread(thread) {
+    if (!thread || !thread.fit) return;
+    try { thread.fit.fit(); } catch(e) {}
+    if (thread.term && thread.term.rows > 0) {
+      try { thread.term.refresh(0, thread.term.rows - 1); } catch(e) {}
+    }
+    sendResize(thread);
+  }
+
+  function sendResize(thread, size) {
+    if (!thread || !thread.term || !thread.ws || thread.ws.readyState !== WebSocket.OPEN) return;
+    var cols = size && size.cols ? size.cols : thread.term.cols;
+    var rows = size && size.rows ? size.rows : thread.term.rows;
+    thread.ws.send(JSON.stringify({
+      type: "resize",
+      cols: cols,
+      rows: rows
+    }));
+  }
+
+  function appendOutput(thread, text) {
+    if (!thread || !text) return;
+    ensureTerminal(thread);
+    if (thread.term) thread.term.write(text);
+  }
+
+  function writeToThread(thread, data) {
+    if (!thread || !data) return;
+    if (!thread.ws || thread.ws.readyState !== WebSocket.OPEN) {
+      thread.pendingWrites.push(data);
+      return;
+    }
+    thread.ws.send(JSON.stringify({ type: "input", data: data }));
   }
 
   // === TOAST ===
@@ -446,33 +525,33 @@
         var data = JSON.parse(e.data);
         if (data.type === "ready") {
           thread.status = "connected";
-          if (activeThread && activeThread.id === thread.id) {
-            setStatus("connected");
-            if (data.backlog) {
-              var lines = data.backlog.split("\n");
-              for (var i = 0; i < lines.length; i++) {
-                if (lines[i].length > 0) appendOutput(lines[i]);
-              }
+          if (data.backlog) {
+            ensureTerminal(thread);
+            if (thread.term) {
+              thread.term.reset();
+              thread.term.write(data.backlog);
             }
           }
+          if (activeThread && activeThread.id === thread.id) {
+            setStatus("connected");
+            showTerminal(thread);
+          }
+          sendResize(thread);
           clearTimeout(thread.reconnectTimer);
           thread.reconnectTimer = null;
           renderThreadPanel();
         }
         if (data.type === "output") {
-          if (activeThread && activeThread.id === thread.id) {
-            appendOutput(data.data);
-          }
+          appendOutput(thread, data.data);
         }
         if (data.type === "error") {
-          if (activeThread && activeThread.id === thread.id) {
-            appendOutput(data.message || data.data || "Error");
-          }
+          appendOutput(thread, data.message || data.data || "Error");
         }
       } catch(e) {}
     };
 
     thread.ws.onopen = function() {
+      sendResize(thread);
       var writes = thread.pendingWrites.slice();
       thread.pendingWrites = [];
       for (var i = 0; i < writes.length; i++) {
@@ -486,8 +565,8 @@
       thread.status = "disconnected";
       if (activeThread && activeThread.id === thread.id) {
         setStatus("disconnected");
-        appendOutput("\nDisconnected (" + e.code + ")");
       }
+      appendOutput(thread, "\nDisconnected (" + e.code + ")\n");
       renderThreadPanel();
       scheduleReconnect(thread);
     };
@@ -512,7 +591,6 @@
     }
 
     var input = cmd + "\r";
-    appendOutput("> " + cmd + "\n");
 
     if (!activeThread.ws || activeThread.ws.readyState !== WebSocket.OPEN) {
       activeThread.pendingWrites.push(input);
@@ -526,10 +604,18 @@
   if (formEl) {
     formEl.addEventListener("submit", function(e) {
       e.preventDefault();
-      var cmd = inputEl.value.trim();
-      if (!cmd) return;
+      var cmd = inputEl.value;
       sendInput(cmd);
       inputEl.value = "";
+      try { inputEl.focus(); } catch(err) {}
+    });
+  }
+
+  if (outputEl) {
+    outputEl.addEventListener("pointerdown", function() {
+      if (isTouchViewport()) {
+        setTimeout(function() { try { inputEl.focus(); } catch(e) {} }, 0);
+      }
     });
   }
 
@@ -573,6 +659,11 @@
       '<span style="color: var(--text-muted);">' +
       'Tap an agent <span style="color: var(--accent);">circle</span> to start</span>';
   }
+
+  window.addEventListener("resize", function() {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(function() { fitThread(activeThread); }, 120);
+  });
 
   // === INIT ===
   loadState();
