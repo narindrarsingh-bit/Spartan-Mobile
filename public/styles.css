@@ -38,7 +38,8 @@ body {
 }
 
 #app {
-  height: var(--real-height, 100vh);
+  height: var(--app-height, var(--real-height, 100vh));
+  min-height: var(--app-height, var(--real-height, 100vh));
   display: flex;
   flex-direction: row;
   padding: 0;
@@ -714,11 +715,17 @@ body {
 
 /* === INPUT BAR === */
 
-.input-bar {
+/* === COMPOSER DOCK — isolated bottom region === */
+
+.composer-dock {
   flex-shrink: 0;
-  min-width: 0;
-  padding: 8px 16px 0;
   background: var(--bg-primary);
+  padding: 8px 16px 12px;
+  min-width: 0;
+}
+
+.input-bar {
+  /* wrapper only — dock handles boundaries */
 }
 
 .input-shell {
@@ -726,8 +733,7 @@ body {
   align-items: center;
   gap: 8px;
   width: 93%;
-  margin-left: 2.5%;
-  margin-right: 4.5%;
+  margin: 0 auto;
   min-width: 0;
   background: var(--bg-tertiary);
   border-radius: 24px;
@@ -831,6 +837,29 @@ body {
   outline: none;
 }
 
+.trust-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.trust-actions a {
+  display: block;
+  min-height: 36px;
+  padding: 10px 12px;
+  background: var(--bg-tertiary);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 4px;
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.trust-actions a:active {
+  background: rgba(255,255,255,0.08);
+}
+
 .modal-actions {
   display: flex;
   gap: 8px;
@@ -859,6 +888,9 @@ body {
 /* === MOBILE — always visible, compact sidebar === */
 
 @media (max-width: 600px) {
+  .shell {
+    padding-bottom: 0;
+  }
   :root {
     --rail-width: 52px;
     --thread-width: 48px;
@@ -947,12 +979,13 @@ body {
     text-overflow: ellipsis;
     white-space: nowrap;
   }
-  .input-bar {
+  .composer-dock {
     padding: 6px 10px 8px;
   }
   .input-shell {
     gap: 6px;
     padding: 5px 6px 5px 12px;
+    min-height: 44px;
   }
   #command-input {
     height: 34px;

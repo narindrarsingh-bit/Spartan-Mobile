@@ -69,24 +69,26 @@
         <div class="output terminal-mount" id="output"></div>
       </div>
 
-      <!-- Input bar -->
-      <form class="input-bar" id="command-form" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
-        <div class="input-shell">
-          <input
-            id="command-input"
-            type="text"
-            placeholder="Type a message..."
-            autocomplete="off"
-            autocorrect="off"
-            autocapitalize="off"
-            spellcheck="false"
-            enterkeyhint="send"
-          >
-          <button type="submit" class="btn-send" aria-label="Send">
-            <svg viewBox="0 0 20 20" width="20" height="20"><path d="M2 10l16-6-7 7 3 3z" fill="currentColor"/></svg>
-          </button>
-        </div>
-      </form>
+      <!-- Composer dock — isolated bottom region -->
+      <footer class="composer-dock">
+        <form class="input-bar" id="command-form" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+          <div class="input-shell">
+            <input
+              id="command-input"
+              type="text"
+              placeholder="Type a message..."
+              autocomplete="off"
+              autocorrect="off"
+              autocapitalize="off"
+              spellcheck="false"
+              enterkeyhint="send"
+            >
+            <button type="submit" class="btn-send" aria-label="Send">
+              <svg viewBox="0 0 20 20" width="20" height="20"><path d="M2 10l16-6-7 7 3 3z" fill="currentColor"/></svg>
+            </button>
+          </div>
+        </form>
+      </footer>
     </main>
   </div>
 
@@ -100,6 +102,10 @@
       <label>Token
         <input id="setting-token" type="password">
       </label>
+      <div class="trust-actions">
+        <a href="spartan-ca.mobileconfig">Install iPhone Trust Profile</a>
+        <a href="spartan-ca.cer">Download CA Certificate</a>
+      </div>
       <div class="modal-actions">
         <button id="btn-save-settings">Save</button>
         <button id="btn-close-settings">Close</button>
