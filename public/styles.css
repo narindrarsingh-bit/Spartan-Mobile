@@ -33,7 +33,7 @@ html, body {
   top: env(safe-area-inset-top, 0px);
   left: 0;
   right: 0;
-  bottom: calc(env(safe-area-inset-bottom, 0px) - 8px);
+  bottom: env(safe-area-inset-bottom, 0px);
   display: flex;
   flex-direction: row;
 }
@@ -386,9 +386,9 @@ html, body {
   flex: 1;
 }
 
-.sidebar-spacer {
-  flex: 1;
-  min-height: 8px;
+#btn-settings {
+  margin-top: auto;
+  margin-bottom: 8px;
 }
 
 /* Active agent pill indicator */
@@ -693,7 +693,7 @@ html, body {
 
 .input-bar {
   flex-shrink: 0;
-  padding: 0 16px 16px;
+  padding: 8px 12px 12px;
   background: var(--bg-primary);
 }
 
@@ -702,19 +702,19 @@ html, body {
   align-items: center;
   gap: 8px;
   background: var(--bg-tertiary);
-  border-radius: 8px;
-  padding: 4px 8px;
+  border-radius: 24px;
+  padding: 6px 8px 6px 16px;
 }
 
 #command-input {
   flex: 1;
   min-width: 0;
   height: 36px;
-  padding: 0 8px;
+  padding: 0;
   background: transparent;
   border: none;
   color: var(--text-primary);
-  font-size: 14px;
+  font-size: 15px;
   font-family: var(--font-sans);
   outline: none;
 }
@@ -724,20 +724,22 @@ html, body {
 }
 
 .btn-send {
-  width: 32px;
-  height: 32px;
+  width: 34px;
+  height: 34px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: none;
+  background: var(--accent);
   border: none;
-  color: var(--accent);
+  border-radius: 50%;
+  color: #fff;
   cursor: pointer;
   flex-shrink: 0;
+  transition: background 0.15s;
 }
 
 .btn-send:active {
-  color: var(--accent-hover);
+  background: var(--accent-hover);
 }
 
 /* === SETTINGS MODAL === */
@@ -904,7 +906,7 @@ html, body {
     min-height: 44px;
   }
   .input-bar {
-    padding: 0 12px 12px;
+    padding: 6px 8px 8px;
   }
   .output {
     padding: 0;
@@ -942,9 +944,3 @@ html, body {
 .thread-panel .thread-circle:nth-child(5)  { animation-delay: 0.16s; }
 .thread-panel .thread-circle:nth-child(6)  { animation-delay: 0.20s; }
 .thread-panel .thread-circle:nth-child(7)  { animation-delay: 0.24s; }
-
-/* Input bar focus glow */
-#command-input:focus {
-  box-shadow: 0 0 0 2px var(--accent);
-  border-radius: 4px;
-}
