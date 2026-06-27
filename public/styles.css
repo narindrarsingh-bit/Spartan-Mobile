@@ -382,6 +382,186 @@ html, body {
   border-radius: 0 4px 4px 0;
 }
 
+/* === THREAD PANEL === */
+
+.thread-panel {
+  width: 0;
+  min-width: 0;
+  height: 100dvh;
+  background: #2b2d31;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  overflow: hidden;
+  flex-shrink: 0;
+  transition: width 0.2s ease, min-width 0.2s ease;
+}
+
+.thread-panel.open {
+  width: 64px;
+  min-width: 64px;
+}
+
+.thread-panel-header {
+  width: 100%;
+  padding: 8px 4px 4px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.thread-panel-header span {
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.thread-panel-list {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 8px 0;
+}
+
+.thread-panel-list::-webkit-scrollbar { width: 4px; }
+.thread-panel-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+
+/* Thread circle (smaller than sidebar icons) */
+.thread-circle {
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  min-height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: border-radius 0.15s;
+  position: relative;
+  -webkit-user-select: none;
+  user-select: none;
+  touch-action: manipulation;
+}
+
+.thread-circle:active {
+  border-radius: 14px;
+}
+
+.thread-circle.active {
+  border-radius: 14px;
+}
+
+.thread-circle.active::before {
+  content: '';
+  position: absolute;
+  left: -10px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 4px;
+  height: 28px;
+  background: #fff;
+  border-radius: 0 2px 2px 0;
+}
+
+.thread-circle svg {
+  width: 24px;
+  height: 24px;
+}
+
+/* + button — green accent circle */
+.thread-add {
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  min-height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  background: var(--green);
+  transition: border-radius 0.15s, background 0.15s;
+}
+
+.thread-add:active {
+  border-radius: 14px;
+  background: #1d8a48;
+}
+
+.thread-add svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* Wiggle animation */
+@keyframes wiggle {
+  0%   { transform: rotate(0deg); }
+  15%  { transform: rotate(-3deg); }
+  30%  { transform: rotate(3deg); }
+  45%  { transform: rotate(-2deg); }
+  60%  { transform: rotate(2deg); }
+  75%  { transform: rotate(-1deg); }
+  90%  { transform: rotate(1deg); }
+  100% { transform: rotate(0deg); }
+}
+
+.wiggling .thread-circle:not(.thread-add) {
+  animation: wiggle 0.4s ease-in-out infinite;
+}
+
+/* X close button on thread circles */
+.thread-close {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--red);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 2;
+}
+
+.thread-close::before,
+.thread-close::after {
+  content: '';
+  position: absolute;
+  width: 8px;
+  height: 1.5px;
+  background: #fff;
+}
+
+.thread-close::before { transform: rotate(45deg); }
+.thread-close::after  { transform: rotate(-45deg); }
+
+.wiggling .thread-close {
+  display: flex;
+}
+
+/* Thread panel separator */
+.thread-sep {
+  width: 28px;
+  height: 2px;
+  background: #35363c;
+  border-radius: 1px;
+  margin: 4px 0;
+  flex-shrink: 0;
+}
+
 /* === MAIN CONTENT AREA === */
 
 .main {
@@ -614,6 +794,50 @@ html, body {
   }
   .sidebar-icon.agent-active {
     border-radius: 20px;
+  }
+  .thread-panel.open {
+    width: 52px;
+    min-width: 52px;
+  }
+  .thread-circle,
+  .thread-add {
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+    min-height: 36px;
+  }
+  .thread-circle svg {
+    width: 20px;
+    height: 20px;
+  }
+  .thread-add svg {
+    width: 18px;
+    height: 18px;
+  }
+  .thread-circle.active::before {
+    left: -7px;
+    width: 3px;
+    height: 22px;
+  }
+  .thread-circle.active {
+    border-radius: 12px;
+  }
+  .thread-circle:active {
+    border-radius: 12px;
+  }
+  .thread-add:active {
+    border-radius: 12px;
+  }
+  .thread-close {
+    width: 14px;
+    height: 14px;
+    top: -3px;
+    right: -3px;
+  }
+  .thread-close::before,
+  .thread-close::after {
+    width: 7px;
+    height: 1.2px;
   }
   .topbar {
     height: 44px;

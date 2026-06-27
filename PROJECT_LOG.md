@@ -179,3 +179,85 @@ Rewrite the mobile web frontend to look like Discord and fix the "can't type" UX
 9. **Mobile viewport test** — PENDING (keyboard input, scroll behavior on device)
 10. Android build — BLOCKED (Java version)
 11. iOS native build — BLOCKED (no macOS)
+
+## 2026-06-27 — Session: Fix Agent Communication + Claude-code Profile
+
+### Goal
+Fix broken agent communication in the new sidebar frontend.
+
+### What Happened
+1. Diagnosed: `sendInput` in `app.js` sent `type: "input"` without `\r`, so commands were typed into the PTY but never submitted/executed
+2. Verified with raw WebSocket test: `type: "input"` without `\r` types text but doesn't execute; with `\r` appended it works
+3. Fixed `public/app.js`: `sendInput` now sends `cmd + "\r"` (also updates queued writes so replay works)
+4. Found secondary bug: `normalizeProfile` in `server/index.mjs` didn't include `claude-code`, so Claude tabs fell back to plain shell
+5. Fixed `server/index.mjs`: added `claude-code` to the valid profile list
+6. Verified both fixes via raw WebSocket tests: codex echo works, claude-code session correctly spawns "Claude Code" title
+7. Synced `spartan-native/public/` → `spartan-cli/public/` via rsync
+8. Restarted `spartan-cli.service` to pick up backend fix
+9. Verified backend health OK after restart
+
+### Files Changed
+- `public/app.js`: +2/-2 lines (sendInput appends \r, queued writes include \r)
+- `../spartan-cli/server/index.mjs`: +1/-1 line (normalizeProfile includes claude-code)
+- `CURRENT_STATE.md`: updated
+- `PROJECT_LOG.md`: added this session entry
+
+### Tests Run
+- Raw WebSocket: `type: "input"` + `\r` → echo works
+- Raw WebSocket: `type: "input"` without `\r` → text typed but not executed (confirmed bug)
+- Raw WebSocket: `profile=claude-code` → session spawns as "Claude Code" (confirmed fix)
+- `node -c public/app.js` → syntax OK
+- `curl /api/health` → backend OK after restart
+- `rsync` → spartan-cli/public/ synced
+
+### Remaining Work
+1. **Test new frontend on iPhone over Tailscale** — PENDING (current blocker)
+2. Android build — BLOCKED (Java version)
+3. iOS native build — BLOCKED (no macOS)
+
+## 2026-06-27 — Session: Thread Panel + Multi-Session UX
+
+### Goal
+Add Discord-style thread panel for multiple concurrent agent instances per agent. UX: tap agent → panel slides out → + button creates new thread → long press circle → wiggle + X to close.
+
+### What Happened
+1. **HTML**: Added `<aside class="thread-panel">` between sidebar and main area
+   - Header showing agent initial, thread list container populated by JS
+2. **CSS**: Thread panel styles (~120 lines added)
+   - `.thread-panel`: 0/64px width with transition, dark background (#2b2d31)
+   - `.thread-circle`: 40px circles, active pill indicator, hover/active states
+   - `.thread-add`: 40px green circle with + SVG
+   - `@keyframes wiggle`: iOS-style rotation animation
+   - `.wiggling .thread-close`: red X close buttons appear during wiggle
+   - Mobile responsive: 52px panel, 36px circles, compact X buttons
+3. **JS**: Full rewrite for multi-session architecture (~360 lines)
+   - Thread state: `threads[agentId] = [{id, ws, lines, status, ...}]`
+   - `createThread(agent)`: new WebSocket with unique `session=native-<uuid>`
+   - `switchToThread(thread)`: restore thread's buffer to output area
+   - `closeThread(thread)`: kill WebSocket, remove from state, auto-switch
+   - Long press detection: `pointerdown` timer → `enterWiggleMode()` at 500ms
+   - Wiggle mode: `.wiggling` class on panel, X buttons visible, tap anywhere to exit
+   - Thread panel toggle: tap agent → open, tap again → close, tap different → switch
+   - Settings save reconnects active thread
+4. Verified: 2 concurrent Codex WebSocket sessions work independently
+5. Synced to `spartan-cli/public/`
+
+### Files Changed
+- `public/index.html`: removed inline script tag, added thread panel HTML
+- `public/styles.css`: +~120 lines (thread panel, circles, +, wiggle, X, mobile)
+- `public/app.js`: full rewrite (multi-session, thread lifecycle, wiggle UX)
+- `CURRENT_STATE.md`: updated
+- `PROJECT_LOG.md`: added this session entry
+
+### Tests Run
+- `node -c public/app.js` → syntax OK
+- Multi-session WebSocket: 2 threads → both receive independent output
+- `curl /health` → backend OK
+- `rsync` → spartan-cli/public/ synced
+- Dev server serving correct files on :9002
+
+### Remaining Work
+1. **Test thread panel on desktop browser** — PENDING
+2. **Test thread panel on iPhone over Tailscale** — PENDING (current blocker)
+3. Android build — BLOCKED (Java version)
+4. iOS native build — BLOCKED (no macOS)

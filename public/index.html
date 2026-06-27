@@ -37,6 +37,16 @@
       </div>
     </nav>
 
+    <!-- THREAD PANEL — slides out when agent tapped -->
+    <aside class="thread-panel" id="thread-panel">
+      <div class="thread-panel-header" id="thread-panel-header">
+        <span id="thread-panel-name">Threads</span>
+      </div>
+      <div class="thread-panel-list" id="thread-panel-list">
+        <!-- + button + thread circles populated by JS -->
+      </div>
+    </aside>
+
     <!-- MAIN CHANNEL AREA -->
     <main class="main">
 
@@ -59,7 +69,7 @@
         <input
           id="command-input"
           type="text"
-          placeholder="Type a message…"
+          placeholder="Type a message..."
           autocomplete="off"
           autocorrect="off"
           autocapitalize="off"
@@ -90,10 +100,6 @@
     </div>
   </div>
 
-  <script>
-    var DEFAULT_SERVER = 'ws://127.0.0.1:8787';
-    var DEFAULT_TOKEN  = '';
-  </script>
   <script src="app.js"></script>
 </body>
 </html>
