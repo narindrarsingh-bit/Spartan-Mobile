@@ -15,10 +15,10 @@
 
   // === AGENT DEFINITIONS ===
   var agents = [
-    { id: "hermes",     label: "Hermes",     color: "#5865F2", initial: "H" },
-    { id: "codex",      label: "Codex",      color: "#FFA500", initial: "C" },
-    { id: "claude-code",label: "Claude",     color: "#CC9643", initial: "Cl" },
-    { id: "opencode",   label: "OpenCode",   color: "#57F287", initial: "O" }
+    { id: "hermes",     label: "Hermes",     color: "#5865F2", initial: "H", icon: "hermes.png" },
+    { id: "codex",      label: "Codex",      color: "#FFA500", initial: "C", icon: "codex.png" },
+    { id: "claude-code",label: "Claude",     color: "#CC9643", initial: "Cl", icon: "claude.png" },
+    { id: "opencode",   label: "OpenCode",   color: "#57F287", initial: "O", icon: "opencode.png" }
   ];
 
   // === ELEMENT REFS ===
@@ -64,6 +64,20 @@
     } catch(e) {}
   }
 
+  function avatarHTML(agent, size) {
+    if (agent.icon) {
+      return '<img src="' + agent.icon + '" alt="' + agent.label + '" width="' + size + '" height="' + size + '" class="agent-img">';
+    }
+    var sz = Math.round(size * 0.58);
+    var fs = agent.initial.length > 1 ? Math.round(size * 0.29) : Math.round(size * 0.42);
+    return '<svg viewBox="0 0 ' + size + ' ' + size + '" width="' + sz + '" height="' + sz + '">' +
+      '<circle cx="' + (size/2) + '" cy="' + (size/2) + '" r="' + (size/2) + '" fill="' + agent.color + '"/>' +
+      '<text x="' + (size/2) + '" y="' + (size * 0.63) + '" text-anchor="middle" fill="#fff" ' +
+            'font-size="' + fs + '" font-weight="700" font-family="system-ui, sans-serif">' +
+        agent.initial + '</text>' +
+    '</svg>';
+  }
+
   // === SIDEBAR ===
   function renderSidebar() {
     sidebarList.innerHTML = "";
@@ -74,14 +88,7 @@
       el.title = agent.label;
       el.setAttribute("aria-label", agent.label);
 
-      el.innerHTML =
-        '<svg viewBox="0 0 48 48" width="48" height="48">' +
-          '<circle cx="24" cy="24" r="24" fill="' + agent.color + '"/>' +
-          '<text x="24" y="30" text-anchor="middle" fill="#fff" ' +
-                'font-size="' + (agent.initial.length > 1 ? '14' : '20') + '" ' +
-                'font-weight="700" font-family="system-ui, sans-serif">' +
-            agent.initial + '</text>' +
-        '</svg>';
+      el.innerHTML = avatarHTML(agent, 48);
 
       el.addEventListener("click", function() {
         toggleThreadPanel(agent);
@@ -166,13 +173,17 @@
           circle.classList.add("active");
         }
 
-        circle.innerHTML =
-          '<svg viewBox="0 0 48 48" width="48" height="48">' +
-            '<circle cx="24" cy="24" r="24" fill="' + agent.color + '"/>' +
-            '<text x="24" y="30" text-anchor="middle" fill="#fff" ' +
-                  'font-size="16" font-weight="700" font-family="system-ui, sans-serif">' +
-              thread.num + '</text>' +
-          '</svg>';
+        if (agent.icon) {
+          circle.innerHTML = '<img src="' + agent.icon + '" alt="' + thread.label + '" width="40" height="40" class="agent-img">';
+        } else {
+          circle.innerHTML =
+            '<svg viewBox="0 0 48 48" width="48" height="48">' +
+              '<circle cx="24" cy="24" r="24" fill="' + agent.color + '"/>' +
+              '<text x="24" y="30" text-anchor="middle" fill="#fff" ' +
+                    'font-size="16" font-weight="700" font-family="system-ui, sans-serif">' +
+                thread.num + '</text>' +
+            '</svg>';
+        }
 
         // X close button
         var closeBtn = document.createElement("div");
