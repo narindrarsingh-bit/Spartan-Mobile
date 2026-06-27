@@ -727,7 +727,7 @@ body {
 .input-bar {
   flex-shrink: 0;
   min-width: 0;
-  padding: 8px calc(12px + var(--safe-right)) calc(12px + var(--safe-bottom)) 12px;
+  padding: 8px 12px 12px;
   background: var(--bg-primary);
 }
 
@@ -956,7 +956,7 @@ body {
     white-space: nowrap;
   }
   .input-bar {
-    padding: 6px calc(8px + var(--safe-right)) calc(8px + var(--safe-bottom)) 8px;
+    padding: 6px 8px 8px;
   }
   .input-shell {
     gap: 6px;
