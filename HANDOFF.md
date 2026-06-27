@@ -1,7 +1,7 @@
 # Spartan Native — Handoff
 
 ## Current Goal
-Desktop web test PASSED with full Discord-like frontend redesign. Next: mobile/iPhone viewport test over Tailscale.
+Discord-style sidebar redesign complete. Desktop tested. **iPhone Safari test is the current blocker.**
 
 ## Architecture
 ```
@@ -34,32 +34,37 @@ iPhone (Safari)  → http://100.78.120.128:9002  (Python HTTP server on Tailscal
 ## Frontend Files (public/)
 
 ### public/index.html
-- Discord-like mobile layout with profile tabs (shell/qwen/hermes)
-- viewport-fit=cover for notch device safe areas
-- enterkeyhint="send" for mobile keyboards
-- Settings panel overlay with server address + token inputs
-- Status dot (connected/disconnected)
+- Discord-style sidebar layout: left agent rail + main content area
+- Sidebar: 72px fixed rail with circular SVG agent avatars (H, C, Cl, O)
+- Main area: topbar (agent name), output area, input bar
+- Settings modal overlay with server address + token inputs
+- Mobile responsive: ≤600px sidebar overlays main content
 
 ### public/styles.css
 - Discord dark theme palette (#313338 / #2b2d31 / #5865f2)
 - 100dvh height for iOS keyboard behavior (no viewport collapse)
-- Profile tabs as horizontal channel-like buttons
-- Message-style output area with scroll
-- Bottom-fixed input bar with send button
-- Floating settings button (FAB-style)
-- Settings panel slide-in overlay
+- Sidebar: 72px fixed rail, circular SVG avatars with initials, active pill indicator
+- Main area: flex layout, topbar with status dot, scrollable output, fixed input bar
+- Output: monospace font, message bubbles, proper scrolling
+- Input bar: bottom-fixed with send button
+- Modal: centered overlay with form fields
+- Mobile: ≤600px sidebar overlay with hamburger toggle
 - Toast notifications
+- env(safe-area-inset-*) for notch devices
 
 ### public/app.js
 - IIFE with strict mode, no global leaks
+- Agent definitions: hermes, codex, claude-code, opencode (colors + initials)
 - `getDefaultServer()` — smart default: localhost → 127.0.0.1:8797, everything else → Tailscale IP
 - `DEFAULT_TOKEN` fallback so users don't need to manually enter auth
 - WebSocket protocol: wss:// for Tailscale IPs, ws:// for localhost
-- ANSI escape stripping: CSI sequences + OSC sequences (BEL/ST terminators)
-- Profile tab switching with reconnect
+- ANSI escape stripping: CSI (incl. xterm > variants, space params), OSC, single-char escapes (scroll up, etc.), carriage returns, control chars
+- Sidebar render: creates circular SVG avatars with initials
+- Agent switching: updates sidebar highlight, topbar, reconnects WebSocket
 - Queued writes on disconnect (replay on reconnect)
 - localStorage persistence for server/token/profile
-- Settings panel with connect/reconnect button
+- Settings modal with connect/reconnect button
+- Mobile hamburger toggle for sidebar
 - 3-second reconnect backoff
 
 ## Backend Changes (Previous Sessions, Already Committed)
@@ -70,37 +75,41 @@ iPhone (Safari)  → http://100.78.120.128:9002  (Python HTTP server on Tailscal
 
 ## What Works (Verified)
 1. **Desktop browser test** — http://127.0.0.1:9002
+   - Discord sidebar layout renders correctly
    - WebSocket connects to 127.0.0.1:8797 via ws://
-   - Commands send and output returns (tested: echo hello from spartan)
-   - ANSI codes stripped cleanly (Spartan logo renders)
-   - Profile switching works (shell → qwen → hermes)
-   - Settings panel opens/closes
+   - Commands send and output returns
+   - Agent switching works (Hermes → Codex → Claude → OpenCode)
+   - ANSI codes stripped cleanly (Hermes output clean, Codex has minor live-status overlap)
+   - Settings modal opens/closes
    - localStorage persists server/token/profile
    - Zero JS errors in console
 2. **Backend health** — curl to /api/health returns sessions, auth enabled
-3. **iPhone Tailscale test** — PASSED (2026-06-26, previous session)
+3. **iPhone Tailscale test** — PASSED (2026-06-26, previous session, old frontend)
    - WebSocket connects over wss://100.78.120.128:8797
    - Code 1006 resolved by DEFAULT_TOKEN + wss:// fixes
+4. **Files synced** — spartan-cli/public/ matches spartan-native/public/
 
 ## What Is NOT Yet Verified
-1. **Mobile viewport behavior** — keyboard input, scroll-to-bottom, 100dvh on actual iPhone Safari (new CSS/HTML not yet tested on device)
-2. **New frontend on Tailscale** — the redesigned HTML/CSS/JS has not been synced to spartan-cli/public/ or tested on iPhone yet
-3. **Android build** — still blocked by Java version
+1. **New sidebar frontend on iPhone** — PENDING (current blocker)
+2. **Mobile viewport behavior** — keyboard input, scroll-to-bottom, 100dvh on actual iPhone Safari
+3. **Sidebar overlay on ≤600px** — hamburger toggle, overlay dismiss
+4. **Android build** — still blocked by Java version
 
 ## Blockers
-1. **Android build**: Java 25/26 on Fedora, Gradle needs Java 17 or 21. Requires `sudo dnf install java-21-openjdk`
-2. **iOS native build**: No macOS available. Options: GitHub Actions CI or physical Mac.
+1. **iPhone test needed** — cannot verify mobile behavior without device access
+2. **Android build**: Java 25/26 on Fedora, Gradle needs Java 17 or 21. Requires `sudo dnf install java-21-openjdk`
+3. **iOS native build**: No macOS available. Options: GitHub Actions CI or physical Mac.
 
 ## Ordered Next Steps
-### Step 1: Test new frontend on iPhone over Tailscale
-1. Sync: `rsync -av public/ ../spartan-cli/public/`
-2. Navigate iPhone Safari to `http://100.78.120.128:9002`
-3. Verify layout renders correctly (Discord-like dark theme, profile tabs)
-4. Verify typing works (input bar, keyboard, send)
-5. Verify profile switching works
-6. Verify scroll behavior with keyboard open
+### Step 1: Test new sidebar frontend on iPhone over Tailscale
+1. iPhone Safari → `http://100.78.120.128:9002`
+2. Verify sidebar renders (circular agent icons, active pill)
+3. Verify typing works (input bar, keyboard, send)
+4. Verify agent switching (tap each icon, confirm topbar changes)
+5. Verify scroll behavior with keyboard open
+6. Verify safe areas/notch handling
+7. If WebSocket fails, check exact error from console + backend logs
 
-### Step 2: If mobile test passes — commit + proceed to iOS build
-- Install Java 21 for Android (optional)
-- Set up GitHub Actions workflow for iOS builds
-- Or find macOS build target
+### Step 2: If mobile test passes — commit + proceed
+- Commit with clear message
+- Proceed to iOS/Android build

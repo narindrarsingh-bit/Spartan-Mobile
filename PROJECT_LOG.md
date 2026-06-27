@@ -173,7 +173,9 @@ Rewrite the mobile web frontend to look like Discord and fix the "can't type" UX
 3. ~~Profile switching~~ — DONE
 4. ~~Settings panel~~ — DONE
 5. ~~Smart server detection~~ — DONE
-6. **Test new frontend on iPhone over Tailscale** — PENDING (new CSS/HTML not yet synced to spartan-cli/public/)
-7. **Mobile viewport test** — PENDING (keyboard input, scroll behavior on device)
-8. Android build — BLOCKED (Java version)
-9. iOS native build — BLOCKED (no macOS)
+6. ~~Discord-style sidebar redesign~~ — DONE (HTML/CSS/JS complete, desktop tested)
+7. ~~Improved ANSI strip (xterm > variants, space params, scroll-up)~~ — DONE
+8. **Test new frontend on iPhone over Tailscale** — PENDING (current blocker)
+9. **Mobile viewport test** — PENDING (keyboard input, scroll behavior on device)
+10. Android build — BLOCKED (Java version)
+11. iOS native build — BLOCKED (no macOS)
