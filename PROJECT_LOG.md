@@ -1,5 +1,85 @@
 # Spartan Native — Project Log
 
+## 2026-06-27 — Session: iPhone Composer Layout Loop Paused
+
+### Goal
+Fix the native-wrapper iPhone composer/chat box placement without breaking the left rail or recreating the visual "L" at the bottom.
+
+### What Happened
+1. Reconfirmed that the real Spartan CLI and the native wrapper are separate:
+   - Real CLI: `8797`
+   - Native-wrapper preview: `9002`
+2. Restored/kept the real CLI route separate and did not touch the CLI for the composer issue.
+3. Moved the native-wrapper layout away from flex/grid bottom-row ownership toward fixed/absolute ownership:
+   - `#app` fixed to the viewport
+   - `.sidebar` absolute from top to bottom on the left
+   - `.main` absolute beside the rail
+   - `.composer-dock` absolute at the bottom of the main column
+4. Changed manifest/native fallback colors to the main panel gray `#313338`, after black/body fallback showed up as a bad bottom strip.
+5. Roy reported the left bar is now right.
+6. Composer vertical placement is still not final. Blind bottom-padding nudges became counterproductive.
+7. One worse tweak lowered mobile composer padding from `8px` to `5px` and changed `.composer-dock` to `pointer-events: auto`; it was reverted.
+
+### Current State
+- Left rail/strip: correct by Roy's report.
+- Composer: close but unresolved; do not call it fixed.
+- Tap/type behavior: must be rechecked on device before further CSS changes.
+- `9002` preview server is currently running.
+- `8797` remains the real Spartan CLI and is separate.
+
+### Decision
+Pause the CSS pixel loop. Resume only with Android Studio/device/WebView evidence: viewport bounds, safe-area/home-indicator area, composer box geometry, and tap target/focus behavior.
+
+### Files Changed In This Area
+- `public/index.html`
+- `public/styles.css`
+- `public/manifest.json`
+- `ios/App/App/AppDelegate.swift`
+
+### Do Not Repeat
+- Do not preserve the bottom leg of the L; Roy said it can go.
+- Do not use background paint tricks to hide layout gaps.
+- Do not blindly move the composer up/down without checking real WebView bounds.
+- Do not touch the Spartan CLI for this native-wrapper layout issue.
+
+## 2026-06-27 — Session: iPhone Trust Profile Static Route
+
+### Goal
+Make the Spartan HTTPS trust material reachable from the same phone-facing static app used for iPhone Safari testing.
+
+### What Happened
+1. Verified `http://100.78.120.128:9002/` serves the native app
+2. Verified `http://100.78.120.128:9002/spartan-ca.mobileconfig` and `/spartan-ca.cer` returned 404
+3. Copied existing public CA/profile files from `/home/roy/.config/spartan-cli/tls/` into `public/`
+4. Added settings modal links for profile/cert download
+
+### Files Changed
+- `public/spartan-ca.mobileconfig`: existing Spartan CA profile copied into static app
+- `public/spartan-ca.cer`: existing Spartan CA certificate copied into static app
+- `public/index.html`: added settings links
+- `public/styles.css`: styled trust links
+- `CURRENT_STATE.md`, `HANDOFF.md`, `PROJECT_LOG.md`: updated handoff state
+
+### Remaining Work
+1. Retest thread panel on iPhone Safari over Tailscale
+2. If thread creation still disconnects, capture Safari/device behavior and backend logs
+
+## 2026-06-27 — Session: Restore Real Spartan CLI Port
+
+### Goal
+Stop the native-wrapper preview from masking the real Spartan CLI.
+
+### What Happened
+1. Verified multiple stale native preview servers were still running on `8798`, `9000`, `9001`, and `9002`
+2. Verified `spartan-cli/dist/index.html` had native-wrapper markup
+3. Rebuilt `/home/roy/Documents/spartan-cli` with `npm run check`, restoring the real Spartan CLI bundle in `dist/`
+4. Killed the stale Python preview servers
+5. Verified `http://127.0.0.1:8797/` and `https://100.78.120.128:8797/` serve `Spartan CLI`
+6. Verified `9002` no longer answers
+
+### Decision
+Use `8797` for the real Spartan CLI. Treat `9002` as a temporary native-wrapper preview only.
+
 ## 2026-06-26 — Session: Fix Frontend Blockers + Test UI (Previous Session)
 
 ### Goal
@@ -261,3 +341,20 @@ Add Discord-style thread panel for multiple concurrent agent instances per agent
 2. **Test thread panel on iPhone over Tailscale** — PENDING (current blocker)
 3. Android build — BLOCKED (Java version)
 4. iOS native build — BLOCKED (no macOS)
+
+## 2026-06-29 — Session: OpenCode -c flag + Spartan CLI bottom fix + documentation
+
+### Goal
+Make Spartan-launched OpenCode sessions resume the last conversation instead of starting fresh. Fix Spartan CLI bottom clipping. Document backend changes for agent visibility.
+
+### What Happened
+1. **OpenCode `-c` flag**: Added to Spartan backend `server/index.mjs` OpenCode profile args. OpenCode sessions launched from Spartan now use `-c` (continue last session) flag, reading from `~/.local/share/opencode/opencode.db`.
+2. **Spartan CLI bottom fix**: Changed mobile `.shell` CSS `padding-bottom` from `0` to `28px` in `spartan-cli/src/styles.css`. Also added `height: 100%; overflow: hidden` to `html,body,#app` and `overflow: hidden` to `.shell`. Rebuilt Vite dist. Service restarted.
+3. **Documentation**: Updated CURRENT_STATE.md with "Backend Changes (unversioned)" section so all agents know the `-c` flag is active and sessions persist across Spartan launches.
+4. **DeepSeek auth fix** (earlier): Spartan needed restart after EnvironmentFile drop-in was created.
+
+### Files Changed
+- `../spartan-cli/server/index.mjs`: OpenCode args +`-c`
+- `../spartan-cli/src/styles.css`: mobile bottom padding 28px, height/overflow fixes
+- `CURRENT_STATE.md`: added backend changes section
+- `PROJECT_LOG.md`: added this entry
